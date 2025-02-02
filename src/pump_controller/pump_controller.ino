@@ -4,7 +4,7 @@
 #include <AES.h>
 #include <string.h>
 
-RH_ASK driver;
+RH_ASK driver(2000, 4, 4);
 // AES128 instance
 AES128 aes128;
 
