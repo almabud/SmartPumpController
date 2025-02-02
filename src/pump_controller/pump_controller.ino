@@ -3,8 +3,10 @@
 #include <Crypto.h>
 #include <AES.h>
 #include <string.h>
+#include "display.h"
 
 RH_ASK driver(2000, 4, 4);
+Display display;
 // AES128 instance
 AES128 aes128;
 
@@ -21,6 +23,7 @@ void setup() {
   
   // Initialize AES
     aes128.setKey(aes_key, sizeof(aes_key));
+    display.initDisplay();
 
 }
 
@@ -68,5 +71,6 @@ void loop() {
   // Receive any new data from water level measurement controller.
   receiveWaterDistance();
   delay(1000);
+  display.showOnDisplay();
 
 }
