@@ -145,7 +145,7 @@ void Display::drawTodayHistory(bool today = false, int8_t runCount = -1, int16_t
 
   if (runCount > 0 && runTime > 0) {
     tft.setCursor(boxX + 2, boxY + 15);
-    tft.println("count:" + String(runTime));
+    tft.println("Count:" + String(runTime));
     tft.setCursor(boxX + 2, boxY + 26);
     tft.println("Time:" + String(runTime) + " min");
   }
