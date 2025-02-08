@@ -25,28 +25,32 @@ public:
   void initDisplay();
   void setWaterLevel(uint16_t distance);
   Coordinate getCenterPosition(String text, int boxX, int boxY, int boxW, int boxH, int textSize);
-  void togglePumpStatus();
+  void drawPumpStatus(bool pumpStatus = false);
+  void drawChildLock(bool status = false);
+  void drawBypass(bool status = false);
+  void drawTodayHistory(bool today = false, int8_t runCount = -1, int16_t runTime = -1, int16_t powerConsumption = -1);
+  void drawTimer(uint8_t min = 0, uint8_t sec = 0);
+  void drawWaterTankHearBeat(bool status = false);
   // void setupWaterAnimation();
 private:
-  void drawWaterLevel();
+  void drawWaterLevel(bool pumpStatus = false);
   void drawWaterTank();
   uint8_t getWaterLevelY();
   uint8_t getWaterLevel(uint16_t distance);
   uint8_t getWaterLevelHight();
-  void drawPumpStatus();
-//   Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
-//   struct ControllerState {
-//     uint8_t waterLevel = 75;
-//     bool pumpStatus = false;
-//     uint16_t dailyRunCount = 0;
-//     uint32_t dailyRunTime = 0;
-//     float powerConsumption = 0.0;
-//     uint16_t timerSeconds = 0;
-//     bool childLock = false;
-//     bool bypassEnabled = false;
-//     bool rfConnected = false;
-//     uint32_t lastHeartbeat = 0;
-//   } state;
+  //   Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+  //   struct ControllerState {
+  //     uint8_t waterLevel = 75;
+  //     bool pumpStatus = false;
+  //     uint16_t dailyRunCount = 0;
+  //     uint32_t dailyRunTime = 0;
+  //     float powerConsumption = 0.0;
+  //     uint16_t timerSeconds = 0;
+  //     bool childLock = false;
+  //     bool bypassEnabled = false;
+  //     bool rfConnected = false;
+  //     uint32_t lastHeartbeat = 0;
+  //   } state;
 };
 
 #endif

@@ -72,12 +72,20 @@ void loop() {
   // display.();
   // delay(10);
   display.setWaterLevel(1000);
+  display.drawTodayHistory(false, 100, 1500, 1500);
+  display.drawPumpStatus();
   delay(3000);
-    display.setWaterLevel(800);
+  display.setWaterLevel(800);
   delay(3000);
-      display.setWaterLevel(300);
+  display.setWaterLevel(300);
   delay(3000);
-        display.setWaterLevel(0);
+  display.setWaterLevel(0);
+  display.drawPumpStatus(true);
+  display.drawTodayHistory(true);
+  display.drawBypass(true);
+  display.drawChildLock(true);
+  display.drawWaterTankHearBeat(true);
+  display.drawTimer(49, 80);
   delay(3000);
   i++;
 }
