@@ -77,5 +77,7 @@ void loop() {
   delay(3000);
       display.setWaterLevel(300);
   delay(3000);
+        display.setWaterLevel(0);
+  delay(3000);
   i++;
 }

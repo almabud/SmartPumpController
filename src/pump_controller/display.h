@@ -25,6 +25,7 @@ public:
   void initDisplay();
   void setWaterLevel(uint16_t distance);
   Coordinate getCenterPosition(String text, int boxX, int boxY, int boxW, int boxH, int textSize);
+  void togglePumpStatus();
   // void setupWaterAnimation();
 private:
   void drawWaterLevel();
@@ -32,6 +33,7 @@ private:
   uint8_t getWaterLevelY();
   uint8_t getWaterLevel(uint16_t distance);
   uint8_t getWaterLevelHight();
+  void drawPumpStatus();
 //   Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 //   struct ControllerState {
 //     uint8_t waterLevel = 75;

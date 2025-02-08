@@ -50,7 +50,7 @@ uint32_t lastBubbleTime = 0;
 
 // Controller state variables
 struct ControllerState {
-  uint8_t waterLevel = 255;  // Current water level percentage
+  uint8_t waterLevel = 255;      // Current water level percentage
   bool pumpStatus = false;       // Pump ON/OFF state
   uint16_t dailyRunCount = 0;    // Number of times pump ran today
   uint32_t dailyRunTime = 0;     // Total runtime in seconds
@@ -291,6 +291,7 @@ void Display::initDisplay() {
   tft.setRotation(1);
   tft.fillScreen(ST77XX_BLACK);
   drawWaterTank();
+  drawPumpStatus();
   // setWaterLevel();
 
   // setupWaterAnimation();
@@ -317,7 +318,7 @@ void Display::setWaterLevel(uint16_t distance) {
   } else {
     tft.fillRect(6, textXY.y, 57, lineHeight, ST77XX_BLACK);
   }
-
+  tft.setTextColor(ST77XX_WHITE);
   tft.setCursor(textXY.x, textXY.y);
   tft.setTextSize(2);
   tft.println(String(waterLevel) + "%");
@@ -334,6 +335,11 @@ Display::Coordinate Display::getCenterPosition(String text, int boxX, int boxY, 
   return centerCoordinate;
 }
 
+void Display::togglePumpStatus() {
+  state.pumpStatus = !state.pumpStatus;
+  drawPumpStatus();
+}
+
 // Private
 void Display::drawWaterTank() {
   String title = "LEVEL";
@@ -347,11 +353,8 @@ void Display::drawWaterTank() {
 
 void Display::drawWaterLevel() {
   tft.fillRect(WATER_TANK_START_X + 1, 17, WATER_TANK_WIDTH - 2, WATER_TANK_HIGHT, ST77XX_BLACK);
+  tft.fillRect(WATER_TANK_START_X + 1, getWaterLevelY(), WATER_TANK_WIDTH - 2, getWaterLevelHight(), ST77XX_BLUE);
   if (state.pumpStatus) {
-
-  } else {
-    // tft.fillRect(WATER_TANK_START_X, 60, WATER_TANK_WIDTH, 70, ST77XX_BLUE);
-    tft.fillRect(WATER_TANK_START_X + 1, getWaterLevelY(), WATER_TANK_WIDTH - 2, getWaterLevelHight(), ST77XX_BLUE);
   }
 }
 
@@ -366,8 +369,26 @@ uint8_t Display::getWaterLevel(uint16_t distance) {
 }
 
 uint8_t Display::getWaterLevelHight() {
-  // map(input, input_min, input_max, out_min, out_max)
   uint8_t hight = map(state.waterLevel, 0, 100, 0, WATER_TANK_HIGHT - (8 * 1));
 
   return hight;
+}
+
+void Display::drawPumpStatus() {
+  int8_t radius = 15;
+  int8_t switchX = WATER_TANK_WIDTH + WATER_TANK_START_X + radius + 5;
+  int8_t switchY = WATER_TANK_START_Y + radius;
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(1);
+  if (state.pumpStatus) {
+    tft.setTextColor(ST77XX_BLACK);
+    tft.setCursor(switchX - 6, switchY - 3);
+    //tft.fillCircle(x, y, radius, color)
+    tft.fillCircle(switchX, switchY, radius, ST77XX_GREEN);
+    tft.print("ON");
+  } else {
+    tft.setCursor(switchX - 9, switchY - 3);
+    tft.fillCircle(switchX, switchY, radius, ST77XX_RED);
+    tft.print("OFF");
+  }
 }
