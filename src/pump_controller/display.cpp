@@ -85,7 +85,7 @@ void Display::drawPumpStatus(bool pumpStatus = false) {
     tft.fillCircle(switchX, switchY, radius, ST77XX_GREEN);
     tft.print("ON");
   } else {
-    tft.setCursor(switchX - 9, switchY - 3);
+    tft.setCursor(switchX - 7, switchY - 3);
     tft.fillCircle(switchX, switchY, radius, ST77XX_RED);
     tft.print("OFF");
   }
