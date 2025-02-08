@@ -23,10 +23,15 @@ public:
   //                            bool lock, bool bypass, bool rf);
   // void updateDisplay();
   void initDisplay();
-  void setWaterLevel(uint16_t waterLevel);
+  void setWaterLevel(uint16_t distance);
   Coordinate getCenterPosition(String text, int boxX, int boxY, int boxW, int boxH, int textSize);
   // void setupWaterAnimation();
-// private:
+private:
+  void drawWaterLevel();
+  void drawWaterTank();
+  uint8_t getWaterLevelY();
+  uint8_t getWaterLevel(uint16_t distance);
+  uint8_t getWaterLevelHight();
 //   Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 //   struct ControllerState {
 //     uint8_t waterLevel = 75;

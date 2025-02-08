@@ -19,6 +19,10 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 const uint8_t WAVE_LAYERS = 3;
 const uint8_t BUBBLE_COUNT = 4;
 const uint8_t RIPPLE_COUNT = 3;
+const uint8_t WATER_TANK_START_X = 5;
+const uint8_t WATER_TANK_START_Y = 5;
+const uint8_t WATER_TANK_WIDTH = 60;
+const uint8_t WATER_TANK_HIGHT = 122;
 
 // Display update timing
 uint32_t lastDisplayUpdate = 0;
@@ -46,8 +50,8 @@ uint32_t lastBubbleTime = 0;
 
 // Controller state variables
 struct ControllerState {
-  uint8_t waterLevel = 75;       // Current water level percentage
-  bool pumpStatus = true;        // Pump ON/OFF state
+  uint8_t waterLevel = 255;  // Current water level percentage
+  bool pumpStatus = false;       // Pump ON/OFF state
   uint16_t dailyRunCount = 0;    // Number of times pump ran today
   uint32_t dailyRunTime = 0;     // Total runtime in seconds
   float powerConsumption = 0.0;  // Power consumption in kWh
@@ -286,41 +290,84 @@ void Display::initDisplay() {
   // Make the display landscape.
   tft.setRotation(1);
   tft.fillScreen(ST77XX_BLACK);
+  drawWaterTank();
   // setWaterLevel();
 
   // setupWaterAnimation();
 }
 
-void Display::setWaterLevel(uint16_t waterLevel){
-  int levelHeight = map(state.waterLevel, 0, 100, 0, 115);
-  int baseY = 165 - levelHeight;
-  String title = "LEVEL";
-  tft.drawRect(5, 5, 60, 122, ST77XX_WHITE);
-  tft.setTextSize(1);
-  tft.setTextColor(ST77XX_WHITE);
-  Coordinate titleXY = getCenterPosition(title, 5, 5, 60, 122, 1);
-  tft.setCursor(titleXY.x, 10);
-  tft.println(title);
+void Display::setWaterLevel(uint16_t distance) {
+  uint8_t waterLevel = getWaterLevel(distance);
+  int changeWaterLevel = abs(state.waterLevel - waterLevel);
+
+  if (waterLevel == state.waterLevel && state.waterLevel <= 100) {
+    return;
+  }
+
+  state.waterLevel = waterLevel;
+  drawWaterLevel();
+  int baseY = 165 - getWaterLevelHight();
 
   int lineHeight = 8 * 2;
-  //            x, y, w, h, color
   String text = String(waterLevel) + "%";
-  Coordinate textXY = getCenterPosition(text, 5, 5, 60, 122, 2);
-  tft.fillRect(6, textXY.y, 57, lineHeight, ST77XX_BLACK);  // Text color, Background color;
+  Coordinate textXY = getCenterPosition(text, 5, 5, WATER_TANK_WIDTH, WATER_TANK_HIGHT, 2);
+  // Remove the existing write on display.
+  if (textXY.y >= getWaterLevelY()) {
+    tft.fillRect(6, textXY.y, 57, lineHeight, ST77XX_BLUE);
+  } else {
+    tft.fillRect(6, textXY.y, 57, lineHeight, ST77XX_BLACK);
+  }
+
   tft.setCursor(textXY.x, textXY.y);
   tft.setTextSize(2);
   tft.println(String(waterLevel) + "%");
 }
 
-Display::Coordinate Display::getCenterPosition(String text, int boxX, int boxY, int boxW, int boxH, int textSize){
+Display::Coordinate Display::getCenterPosition(String text, int boxX, int boxY, int boxW, int boxH, int textSize) {
   int outputX, outputY, textW, textH;
   tft.setTextSize(textSize);
   tft.getTextBounds(text.c_str(), boxX, boxY, &outputX, &outputY, &textW, &textH);
   Coordinate centerCoordinate;
   centerCoordinate.x = boxX + (boxW - textW) / 2;
   centerCoordinate.y = boxY + (boxH - textH) / 2;
-  Serial.println(textW);
 
   return centerCoordinate;
+}
 
+// Private
+void Display::drawWaterTank() {
+  String title = "LEVEL";
+  tft.drawRect(WATER_TANK_START_X, WATER_TANK_START_Y, WATER_TANK_WIDTH, WATER_TANK_HIGHT, ST77XX_WHITE);
+  tft.setTextSize(1);
+  tft.setTextColor(ST77XX_WHITE);
+  Coordinate titleXY = getCenterPosition(title, WATER_TANK_START_X, WATER_TANK_START_Y, WATER_TANK_WIDTH, WATER_TANK_HIGHT, 1);
+  tft.setCursor(titleXY.x, 10);
+  tft.println(title);
+}
+
+void Display::drawWaterLevel() {
+  tft.fillRect(WATER_TANK_START_X + 1, 17, WATER_TANK_WIDTH - 2, WATER_TANK_HIGHT, ST77XX_BLACK);
+  if (state.pumpStatus) {
+
+  } else {
+    // tft.fillRect(WATER_TANK_START_X, 60, WATER_TANK_WIDTH, 70, ST77XX_BLUE);
+    tft.fillRect(WATER_TANK_START_X + 1, getWaterLevelY(), WATER_TANK_WIDTH - 2, getWaterLevelHight(), ST77XX_BLUE);
+  }
+}
+
+uint8_t Display::getWaterLevelY() {
+  return WATER_TANK_HIGHT - getWaterLevelHight() + 10;
+}
+
+uint8_t Display::getWaterLevel(uint16_t distance) {
+  uint8_t waterLevel = map(distance, 0, 1000, 0, 100);
+
+  return waterLevel;
+}
+
+uint8_t Display::getWaterLevelHight() {
+  // map(input, input_min, input_max, out_min, out_max)
+  uint8_t hight = map(state.waterLevel, 0, 100, 0, WATER_TANK_HIGHT - (8 * 1));
+
+  return hight;
 }

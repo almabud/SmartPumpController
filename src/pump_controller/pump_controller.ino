@@ -63,7 +63,7 @@ void receiveWaterDistance() {
   }
 }
 
-uint16_t i = 0;
+uint8_t i = 0;
 
 void loop() {
   // Receive any new data from water level measurement controller.
@@ -71,13 +71,11 @@ void loop() {
   // delay(1000);
   // display.();
   // delay(10);
-  display.setWaterLevel(100);
-  delay(1000);
-  display.setWaterLevel(12);
-  delay(1000);
-  display.setWaterLevel(13);
-  delay(1000);
-  display.setWaterLevel(500);
-  delay(1000);
+  display.setWaterLevel(1000);
+  delay(3000);
+    display.setWaterLevel(800);
+  delay(3000);
+      display.setWaterLevel(300);
+  delay(3000);
   i++;
 }
