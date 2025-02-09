@@ -1,7 +1,32 @@
 #include "control_box.h"
 
-void ControlBox::init() {
-  display.initDisplay();
+void ControlBox::setup() {
+  display.setup();
+  pinMode(powerSwitchPin, INPUT_PULLUP);
+}
+
+void ControlBox::loop() {
+  checkHeartBeat();
+  powerSwitch();
+}
+
+void ControlBox::powerSwitch() {
+  bool powerSwitchState = digitalRead(powerSwitchPin);
+  if (powerSwitchState == LOW && state.powerSwitchState == HIGH) {
+    state.powerSwitchStartTime = millis();
+  }
+  if (powerSwitchState == LOW && (millis() - state.powerSwitchStartTime) >= 500 && state.powerSwitchStartTime > 0) {
+    togglePower();
+    state.powerSwitchStartTime = 0;
+  }
+  
+  state.powerSwitchState = powerSwitchState;
+}
+
+void ControlBox::togglePower() {
+  state.pumpSwitchStatus = !state.pumpSwitchStatus;
+  digitalWrite(powerSwitchPin, state.pumpSwitchStatus);
+  display.drawPumpStatus(state.pumpSwitchStatus);
 }
 
 ControlBox::ControlBoxState ControlBox::getState() const {
@@ -25,10 +50,9 @@ uint8_t ControlBox::getWaterLevel(uint16_t distance = UINT16_MAX) {
 void ControlBox::setWaterDistance(uint16_t distance) {
   uint8_t waterLevel = getWaterLevel(distance);
   uint8_t changeWaterLevel = abs(distance - state.waterDistance);
-  if(changeWaterLevel <= 3 && state.waterDistance != UINT16_MAX){
+  if (changeWaterLevel <= 3 && state.waterDistance != UINT16_MAX) {
     return;
   }
-  state.waterDistanceErrorCnt = 0;
   state.waterDistance = distance;
   display.setWaterLevel(waterLevel);
 }

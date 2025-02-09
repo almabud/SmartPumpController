@@ -16,7 +16,7 @@ const uint8_t WATER_TANK_HIGHT = 127;
 uint8_t waterLevelState = 255;
 
 
-void Display::initDisplay() {
+void Display::setup() {
   // Initialize display
   tft.initR(INITR_BLACKTAB);
   // Make the display landscape.

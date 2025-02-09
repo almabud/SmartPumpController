@@ -6,12 +6,16 @@ WaterTankDataController::WaterTankDataController(ControlBox& controlBox)
   : controlBox(controlBox), driver(2000, 4, 4) {
 }
 
-void WaterTankDataController::init() {
+void WaterTankDataController::setup() {
   if (!driver.init())  // Initialize ASK driver
     Serial.println("init failed");
 
   // Initialize AES
   aes128.setKey(aes_key, sizeof(aes_key));
+}
+
+void WaterTankDataController::loop() {
+  receiveWaterDistance();
 }
 
 void WaterTankDataController::receiveWaterDistance() {

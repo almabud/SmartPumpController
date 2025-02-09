@@ -10,7 +10,7 @@ public:
   struct Coordinate {
     int x, y;
   };
-  void initDisplay();
+  void setup();
   void setWaterLevel(uint8_t distance);
   Coordinate getCenterPosition(String text, int boxX, int boxY, int boxW, int boxH, int textSize);
   void drawPumpStatus(bool pumpStatus = false);

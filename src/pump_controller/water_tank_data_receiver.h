@@ -11,7 +11,8 @@
 class WaterTankDataController {
 public:
   WaterTankDataController(ControlBox &controlBox);
-  void init();
+  void setup();
+  void loop();
   void receiveWaterDistance();
 private:
   ControlBox& controlBox;

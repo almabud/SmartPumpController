@@ -10,8 +10,8 @@ const int relayPin = 8;
 
 void setup() {
   Serial.begin(9600);  // Starts the serial communication
-  controlBox.init();
-  waterTankDataController.init();
+  controlBox.setup();
+  waterTankDataController.setup();
 }
 
 void loop() {
@@ -21,8 +21,8 @@ void loop() {
   // delay(1000);
   // display.();
   // delay(10);
-  waterTankDataController.receiveWaterDistance();
-  controlBox.checkHeartBeat();
+  waterTankDataController.loop();
+  controlBox.loop();
   // controlBox.display.setWaterLevel(1000);
   // display.drawTodayHistory(false, 100, 1500, 1500);
   // display.drawPumpStatus();
@@ -38,5 +38,4 @@ void loop() {
   // display.drawChildLock(true);
   // display.drawWaterTankHearBeat(true);
   // display.drawTimer(49, 80);
-  delay(3000);
 }
