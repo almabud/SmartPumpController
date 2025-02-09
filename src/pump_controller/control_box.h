@@ -12,7 +12,7 @@ public:
     uint16_t pumpRunCnt = 0;
     uint16_t pumpRunTime = 0;
     uint16_t powerConsumption = 0;
-    bool pumpSwitchStatus = false;
+    bool pumpStatus = false;
     bool childLock = true;
     bool bypass = false;
     bool heartBeat = false;
@@ -30,8 +30,10 @@ public:
   uint8_t getWaterLevel(uint16_t distance = UINT16_MAX);
   void setWaterDistance(uint16_t distance);
   void setHeartBeat(bool heartBeat);
-  void powerSwitch();
+  void onClickPowerSwitch();
+  void changePumpStatus(bool status=false);
   void togglePower();
+  void autoPowerOnOff();
 private:
   ControlBoxState state;
 };

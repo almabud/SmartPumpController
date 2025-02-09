@@ -2,15 +2,18 @@
 
 void ControlBox::setup() {
   display.setup();
+  // Initial Heart beat should be false and this method must be called at setup.
+  setHeartBeat(false);
   pinMode(powerSwitchPin, INPUT_PULLUP);
 }
 
 void ControlBox::loop() {
   checkHeartBeat();
-  powerSwitch();
+  onClickPowerSwitch();
+  autoPowerOnOff();
 }
 
-void ControlBox::powerSwitch() {
+void ControlBox::onClickPowerSwitch() {
   bool powerSwitchState = digitalRead(powerSwitchPin);
   if (powerSwitchState == LOW && state.powerSwitchState == HIGH) {
     state.powerSwitchStartTime = millis();
@@ -19,14 +22,18 @@ void ControlBox::powerSwitch() {
     togglePower();
     state.powerSwitchStartTime = 0;
   }
-  
+
   state.powerSwitchState = powerSwitchState;
 }
 
+void ControlBox::changePumpStatus(bool status = false) {
+  state.pumpStatus = status;
+  digitalWrite(powerSwitchPin, state.pumpStatus);
+  display.drawPumpStatus(state.pumpStatus);
+}
+
 void ControlBox::togglePower() {
-  state.pumpSwitchStatus = !state.pumpSwitchStatus;
-  digitalWrite(powerSwitchPin, state.pumpSwitchStatus);
-  display.drawPumpStatus(state.pumpSwitchStatus);
+  changePumpStatus(!state.pumpStatus);
 }
 
 ControlBox::ControlBoxState ControlBox::getState() const {
@@ -34,7 +41,7 @@ ControlBox::ControlBoxState ControlBox::getState() const {
 }
 
 void ControlBox::checkHeartBeat() {
-  if (millis() - state.lastUpdatedHeartBeat >= 3000) {
+  if (millis() - state.lastUpdatedHeartBeat >= 3000 && state.heartBeat) {
     setHeartBeat(false);
   }
 }
@@ -61,4 +68,16 @@ void ControlBox::setHeartBeat(bool heartBeat) {
   state.heartBeat = heartBeat;
   state.lastUpdatedHeartBeat = millis();
   display.drawWaterTankHearBeat(heartBeat);
+}
+
+void ControlBox::autoPowerOnOff() {
+  if (!state.bypass && getWaterLevel() <= 5 && state.heartBeat && !state.pumpStatus) {
+    changePumpStatus(true);
+  }
+  if (!state.bypass && getWaterLevel() > 90 && state.heartBeat && state.pumpStatus) {
+    changePumpStatus(false);
+  }
+  if (!state.bypass && !state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus){
+    changePumpStatus(false);
+  }
 }
