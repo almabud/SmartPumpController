@@ -8,9 +8,6 @@
 // Initialize display module.
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
-const uint8_t WAVE_LAYERS = 3;
-const uint8_t BUBBLE_COUNT = 4;
-const uint8_t RIPPLE_COUNT = 3;
 // water tank constants.
 const uint8_t WATER_TANK_START_X = 1;
 const uint8_t WATER_TANK_START_Y = 1;
@@ -36,7 +33,6 @@ void Display::initDisplay() {
 
 void Display::setWaterLevel(uint16_t distance) {
   uint8_t waterLevel = getWaterLevel(distance);
-  int changeWaterLevel = abs(waterLevel - waterLevel);
 
   if (waterLevelState == waterLevel && waterLevelState <= 100) {
     return;
@@ -226,7 +222,7 @@ uint8_t Display::getWaterLevelY() {
 }
 
 uint8_t Display::getWaterLevel(uint16_t distance) {
-  uint8_t waterLevel = map(distance, 0, 1000, 0, 100);
+  uint8_t waterLevel = map(distance, 0, 155, 0, 100);
 
   return waterLevel;
 }
