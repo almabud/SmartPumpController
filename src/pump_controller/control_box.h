@@ -9,6 +9,7 @@ public:
   struct ControlBoxState {
     uint16_t waterDistance = UINT16_MAX;
     uint8_t waterDistanceErrorCnt = 0;
+    uint16_t errorWaterDistance = UINT16_MAX;
     uint8_t timer = 0;
     uint16_t pumpRunCnt = 0;
     uint16_t pumpRunTime = 0;
@@ -23,6 +24,7 @@ public:
   void init();
   ControlBoxState getState() const;
   void checkHeartBeat();
+  uint8_t getWaterLevel(uint16_t distance = UINT16_MAX);
   void setWaterDistance(uint16_t distance);
   void setHeartBeat(bool heartBeat);
 private:

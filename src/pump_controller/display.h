@@ -11,7 +11,7 @@ public:
     int x, y;
   };
   void initDisplay();
-  void setWaterLevel(uint16_t distance);
+  void setWaterLevel(uint8_t distance);
   Coordinate getCenterPosition(String text, int boxX, int boxY, int boxW, int boxH, int textSize);
   void drawPumpStatus(bool pumpStatus = false);
   void drawChildLock(bool status = false);
@@ -23,7 +23,6 @@ private:
   void drawWaterLevel(bool pumpStatus = false);
   void drawWaterTank();
   uint8_t getWaterLevelY();
-  uint8_t getWaterLevel(uint16_t distance);
   uint8_t getWaterLevelHight();
 };
 

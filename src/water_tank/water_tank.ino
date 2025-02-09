@@ -27,7 +27,7 @@ void setup() {
     aes128.setKey(aes_key, sizeof(aes_key));
 }
 
-int calculateDistance(){
+uint16_t calculateDistance(){
   long duration;
   int distance;
   digitalWrite(trigPin, LOW);
@@ -40,7 +40,7 @@ int calculateDistance(){
   return distance;
 }
 
-void sendData(int distance){
+void sendData(uint16_t distance){
     // Clear the buffer
     memset(encrypted, 0, sizeof(encrypted));
     
@@ -58,6 +58,10 @@ void sendData(int distance){
 }
 
 void loop() {
-  sendData(calculateDistance());
-  delay(1000);
+  uint16_t distance = 0;
+  for(int i=0; i<5; i++){
+    distance += calculateDistance();
+    delay(60);
+  }
+  sendData(distance / 5);
 }

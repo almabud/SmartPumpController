@@ -31,9 +31,7 @@ void Display::initDisplay() {
   drawWaterTankHearBeat();
 }
 
-void Display::setWaterLevel(uint16_t distance) {
-  uint8_t waterLevel = getWaterLevel(distance);
-
+void Display::setWaterLevel(uint8_t waterLevel) {
   if (waterLevelState == waterLevel && waterLevelState <= 100) {
     return;
   }
@@ -219,12 +217,6 @@ void Display::drawWaterLevel(bool pumpStatus = false) {
 
 uint8_t Display::getWaterLevelY() {
   return WATER_TANK_HIGHT - getWaterLevelHight() + 10;
-}
-
-uint8_t Display::getWaterLevel(uint16_t distance) {
-  uint8_t waterLevel = map(distance, 0, 155, 0, 100);
-
-  return waterLevel;
 }
 
 uint8_t Display::getWaterLevelHight() {
