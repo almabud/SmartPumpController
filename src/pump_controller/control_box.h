@@ -21,8 +21,10 @@ public:
     unsigned long powerSwitchStartTime = 0;
     bool powerSwitchState = HIGH;
   };
-  const int powerSwitchPin = 6;
+  int powerSwitchPin = 6;
+  int relaySwitchPin = 8;
   Display display;
+  ControlBox(int powerSwitchPin = 6, int relaySwitchPin = 8);
   void setup();
   void loop();
   ControlBoxState getState() const;
@@ -31,7 +33,7 @@ public:
   void setWaterDistance(uint16_t distance);
   void setHeartBeat(bool heartBeat);
   void onClickPowerSwitch();
-  void changePumpStatus(bool status=false);
+  void changePumpStatus(bool status = false);
   void togglePower();
   void autoPowerOnOff();
 private:

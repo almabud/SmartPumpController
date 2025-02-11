@@ -1,5 +1,10 @@
 #include "control_box.h"
 
+ControlBox::ControlBox(int powerSwitchPin = 6, int relaySwitchPin = 8) {
+  this->powerSwitchPin = powerSwitchPin;
+  this->relaySwitchPin = relaySwitchPin;
+}
+
 void ControlBox::setup() {
   display.setup();
   // Initial Heart beat should be false and this method must be called at setup.
@@ -28,7 +33,7 @@ void ControlBox::onClickPowerSwitch() {
 
 void ControlBox::changePumpStatus(bool status = false) {
   state.pumpStatus = status;
-  digitalWrite(powerSwitchPin, state.pumpStatus);
+  digitalWrite(relaySwitchPin, state.pumpStatus);
   display.drawPumpStatus(state.pumpStatus);
 }
 
@@ -77,7 +82,7 @@ void ControlBox::autoPowerOnOff() {
   if (!state.bypass && getWaterLevel() > 90 && state.heartBeat && state.pumpStatus) {
     changePumpStatus(false);
   }
-  if (!state.bypass && !state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus){
+  if (!state.bypass && !state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus) {
     changePumpStatus(false);
   }
 }

@@ -5,7 +5,6 @@
 
 ControlBox controlBox;
 WaterTankDataController waterTankDataController(controlBox);
-const int relayPin = 8;
 
 
 void setup() {
