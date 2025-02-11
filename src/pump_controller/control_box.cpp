@@ -1,8 +1,9 @@
 #include "control_box.h"
 
-ControlBox::ControlBox(int powerSwitchPin = 6, int relaySwitchPin = 8) {
+ControlBox::ControlBox(int powerSwitchPin = 6, int leftArrowSwitchPin = 7, int relaySwitchPin = 8) {
   this->powerSwitchPin = powerSwitchPin;
   this->relaySwitchPin = relaySwitchPin;
+  this->leftArrowSwitchPin = leftArrowSwitchPin;  // This should be the child lock switch.
 }
 
 void ControlBox::setup() {
@@ -15,20 +16,36 @@ void ControlBox::setup() {
 void ControlBox::loop() {
   checkHeartBeat();
   onClickPowerSwitch();
+  onClicLeftArrowSwitch();
   autoPowerOnOff();
 }
 
 void ControlBox::onClickPowerSwitch() {
-  bool powerSwitchState = digitalRead(powerSwitchPin);
-  if (powerSwitchState == LOW && state.powerSwitchState == HIGH) {
+  if(state.childLock) return;
+
+  bool switchState = digitalRead(powerSwitchPin);
+  if (switchState == LOW && state.powerSwitchState == HIGH) {
     state.powerSwitchStartTime = millis();
   }
-  if (powerSwitchState == LOW && (millis() - state.powerSwitchStartTime) >= 500 && state.powerSwitchStartTime > 0 && (state.bypass || state.heartBeat)) {
+  if (switchState == LOW && (millis() - state.powerSwitchStartTime) >= 500 && state.powerSwitchStartTime > 0 && (state.bypass || state.heartBeat)) {
     togglePower();
     state.powerSwitchStartTime = 0;
   }
 
-  state.powerSwitchState = powerSwitchState;
+  state.powerSwitchState = switchState;
+}
+
+void ControlBox::onClicLeftArrowSwitch() {
+  bool switchState = digitalRead(leftArrowSwitchPin);
+  if (switchState == LOW && state.leftArrowSwitchState == HIGH) {
+    state.childLockSwitchStartTime = millis();
+  }
+  if (switchState == LOW && (millis() - state.childLockSwitchStartTime) >= 500 && state.childLockSwitchStartTime > 0) {
+    toggleChildLock();
+    state.childLockSwitchStartTime = 0;
+  }
+
+  state.leftArrowSwitchState = switchState;
 }
 
 void ControlBox::changePumpStatus(bool status = false) {
@@ -39,6 +56,11 @@ void ControlBox::changePumpStatus(bool status = false) {
 
 void ControlBox::togglePower() {
   changePumpStatus(!state.pumpStatus);
+}
+
+void ControlBox::toggleChildLock(){
+  state.childLock = !state.childLock;
+  display.drawChildLock(state.childLock);
 }
 
 ControlBox::ControlBoxState ControlBox::getState() const {

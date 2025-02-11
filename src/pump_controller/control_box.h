@@ -12,19 +12,23 @@ public:
     uint16_t pumpRunCnt = 0;
     uint16_t pumpRunTime = 0;
     uint16_t powerConsumption = 0;
-    bool pumpStatus = false;
-    bool childLock = true;
     bool bypass = false;
     bool heartBeat = false;
     unsigned long lastUpdatedHeartBeat = 0;
     // Power switch.
     unsigned long powerSwitchStartTime = 0;
     bool powerSwitchState = HIGH;
+    bool pumpStatus = false;
+    // Child lock.
+    unsigned long childLockSwitchStartTime = 0;
+    bool leftArrowSwitchState = HIGH;
+    bool childLock = false;
   };
   int powerSwitchPin = 6;
   int relaySwitchPin = 8;
+  int leftArrowSwitchPin = 7;
   Display display;
-  ControlBox(int powerSwitchPin = 6, int relaySwitchPin = 8);
+  ControlBox(int powerSwitchPin = 6, int leftArrowSwitchPin = 7, int relaySwitchPin = 8);
   void setup();
   void loop();
   ControlBoxState getState() const;
@@ -33,8 +37,10 @@ public:
   void setWaterDistance(uint16_t distance);
   void setHeartBeat(bool heartBeat);
   void onClickPowerSwitch();
+  void onClicLeftArrowSwitch();
   void changePumpStatus(bool status = false);
   void togglePower();
+  void toggleChildLock();
   void autoPowerOnOff();
 private:
   ControlBoxState state;
