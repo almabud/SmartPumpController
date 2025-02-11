@@ -18,7 +18,7 @@ void ControlBox::onClickPowerSwitch() {
   if (powerSwitchState == LOW && state.powerSwitchState == HIGH) {
     state.powerSwitchStartTime = millis();
   }
-  if (powerSwitchState == LOW && (millis() - state.powerSwitchStartTime) >= 500 && state.powerSwitchStartTime > 0) {
+  if (powerSwitchState == LOW && (millis() - state.powerSwitchStartTime) >= 500 && state.powerSwitchStartTime > 0 && (state.bypass || state.heartBeat)) {
     togglePower();
     state.powerSwitchStartTime = 0;
   }
