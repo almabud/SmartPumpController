@@ -21,6 +21,9 @@ void ControlBox::loop() {
   onClicLeftArrowSwitch();
   onClicRightArrowSwitch();
   autoPowerOnOff();
+  onTimerActivate();
+  upTimer();
+  minusTimer();
 }
 
 void ControlBox::onClickPowerSwitch() {
@@ -28,11 +31,17 @@ void ControlBox::onClickPowerSwitch() {
 
   bool switchState = digitalRead(powerSwitchPin);
   if (switchState == LOW && state.powerSwitchState == HIGH) {
+    Serial.println(state.powerSwitchClickCnt);
     state.powerSwitchStartTime = millis();
-  }
-  if (switchState == LOW && (millis() - state.powerSwitchStartTime) >= 500 && state.powerSwitchStartTime > 0 && (state.bypass || state.heartBeat)) {
+    state.powerSwitchClickCnt++;
+  } else if (switchState == LOW
+             && (millis() - state.powerSwitchStartTime) >= 500
+             && state.powerSwitchStartTime > 0
+             && (state.bypass || state.heartBeat)
+             && state.powerSwitchClickCnt < 2) {
     togglePower();
     state.powerSwitchStartTime = 0;
+    state.powerSwitchClickCnt = 0;
   }
 
   state.powerSwitchState = switchState;
@@ -40,10 +49,9 @@ void ControlBox::onClickPowerSwitch() {
 
 void ControlBox::onClicLeftArrowSwitch() {
   bool switchState = digitalRead(leftArrowSwitchPin);
-  if (switchState == LOW && state.leftArrowSwitchState == HIGH) {
+  if (switchState == LOW && state.leftArrowSwitchState == HIGH && state.powerSwitchClickCnt < 2) {
     state.childLockSwitchStartTime = millis();
-  }
-  if (switchState == LOW && (millis() - state.childLockSwitchStartTime) >= 1500 && state.childLockSwitchStartTime > 0) {
+  } else if (switchState == LOW && (millis() - state.childLockSwitchStartTime) >= 1500 && state.childLockSwitchStartTime > 0 && state.powerSwitchClickCnt <= 2) {
     toggleChildLock();
     state.childLockSwitchStartTime = 0;
   }
@@ -54,10 +62,9 @@ void ControlBox::onClicLeftArrowSwitch() {
 void ControlBox::onClicRightArrowSwitch() {
   if (state.childLock) return;
   bool switchState = digitalRead(rightArrowSwitchPin);
-  if (switchState == LOW && state.rightArrowSwitchState == HIGH) {
+  if (switchState == LOW && state.rightArrowSwitchState == HIGH && state.powerSwitchClickCnt < 2) {
     state.bypassSwitchStartTime = millis();
-  }
-  if (switchState == LOW && (millis() - state.bypassSwitchStartTime) >= 1000 && state.bypassSwitchStartTime > 0) {
+  } else if (switchState == LOW && (millis() - state.bypassSwitchStartTime) >= 1000 && state.bypassSwitchStartTime > 0 && state.powerSwitchClickCnt < 2) {
     toggleBypass();
     state.bypassSwitchStartTime = 0;
   }
@@ -129,5 +136,61 @@ void ControlBox::autoPowerOnOff() {
   }
   if (!state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus) {
     changePumpStatus(false);
+  }
+}
+
+void ControlBox::onTimerActivate() {
+  if (state.powerSwitchClickCnt > 2) {
+    state.powerSwitchClickCnt = 2;
+  }
+  if (state.powerSwitchClickCnt < 2) {
+    state.timerSettingStartTime = millis();
+    return;
+  }
+  if (millis() - state.timerSettingStartTime >= 400) {
+    if (state.hideTimer) {
+      display.clearTimerDisplay();
+    } else {
+      Serial.println(state.timer);
+      display.drawTimer(state.timer);
+    }
+    state.timerSettingStartTime = millis();
+    state.hideTimer = !state.hideTimer;
+  }
+}
+
+void ControlBox::upTimer() {
+  if (state.childLock) return;
+  uint8_t tempTimer = state.timer;
+  bool switchState = digitalRead(rightArrowSwitchPin);
+  if (switchState == LOW && state.leftArrowSwitchState == HIGH && state.powerSwitchClickCnt == 2) {
+    tempTimer--;
+  } else if (switchState == LOW && state.leftArrowSwitchState == LOW && state.powerSwitchClickCnt == 2 && (millis() - state.timerSettingStartTime) >= 300) {
+    state.timerSettingStartTime = 0;
+    tempTimer--;
+  }
+
+  if (tempTimer <= 0) {
+    state.timer = 0;
+  } else {
+    state.timer = tempTimer;
+  }
+}
+
+void ControlBox::minusTimer() {
+  if (state.childLock) return;
+  uint8_t tempTimer = state.timer;
+  bool switchState = digitalRead(leftArrowSwitchPin);
+  if (switchState == LOW && state.leftArrowSwitchState == HIGH && state.powerSwitchClickCnt == 2) {
+    tempTimer++;
+  } else if (switchState == LOW && state.leftArrowSwitchState == LOW && state.powerSwitchClickCnt == 2 && (millis() - state.timerSettingStartTime) >= 300) {
+    state.timerSettingStartTime = 0;
+    tempTimer++;
+  }
+
+  if (tempTimer >= 99) {
+    state.timer = 99;
+  } else {
+    state.timer = tempTimer;
   }
 }

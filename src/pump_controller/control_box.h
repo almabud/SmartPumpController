@@ -8,7 +8,6 @@ class ControlBox {
 public:
   struct ControlBoxState {
     uint16_t waterDistance = UINT16_MAX;
-    uint8_t timer = 0;
     uint16_t pumpRunCnt = 0;
     uint16_t pumpRunTime = 0;
     uint16_t powerConsumption = 0;
@@ -26,6 +25,14 @@ public:
     unsigned long bypassSwitchStartTime = 0;
     bool rightArrowSwitchState = HIGH;
     bool bypass = false;
+    // timer
+    uint8_t timer = 0;
+    unsigned long timerStartTime = 0;
+    unsigned long timerSettingStartTime = 0;
+    uint8_t powerSwitchClickCnt = 0;
+    bool hideTimer = true;
+
+
   };
   int powerSwitchPin = 6;
   int relaySwitchPin = 8;
@@ -48,6 +55,9 @@ public:
   void toggleChildLock();
   void toggleBypass();
   void autoPowerOnOff();
+  void onTimerActivate();
+  void upTimer();
+  void minusTimer();
 private:
   ControlBoxState state;
 };

@@ -17,6 +17,7 @@ public:
   void drawChildLock(bool status = false);
   void drawBypass(bool status = false);
   void drawTodayHistory(bool today = false, int8_t runCount = -1, int16_t runTime = -1, int16_t powerConsumption = -1);
+  void clearTimerDisplay();
   void drawTimer(uint8_t min = 0, uint8_t sec = 0);
   void drawWaterTankHearBeat(bool status = false);
 private:

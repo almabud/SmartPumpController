@@ -150,12 +150,19 @@ void Display::drawTodayHistory(bool today = false, int8_t runCount = -1, int16_t
   }
 }
 
-void Display::drawTimer(uint8_t min = 0, uint8_t sec = 0) {
+void Display::clearTimerDisplay() {
   uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
   uint8_t boxY = 88;
   uint8_t boxW = 155 - WATER_TANK_WIDTH;
   tft.drawRect(boxX, boxY, boxW, 24, ST77XX_WHITE);
   tft.fillRect(boxX + 1, boxY + 1, boxW - 2, 22, ST77XX_BLACK);
+}
+
+void Display::drawTimer(uint8_t min = 0, uint8_t sec = 0) {
+  uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
+  uint8_t boxY = 88;
+  uint8_t boxW = 155 - WATER_TANK_WIDTH;
+  clearTimerDisplay();
   String timer = "";
 
   if (min < 10) {
