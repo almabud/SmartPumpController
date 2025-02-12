@@ -27,8 +27,9 @@ public:
   int powerSwitchPin = 6;
   int relaySwitchPin = 8;
   int leftArrowSwitchPin = 7;
+  int rightArrowSwitchPin = 5;
   Display display;
-  ControlBox(int powerSwitchPin = 6, int leftArrowSwitchPin = 7, int relaySwitchPin = 8);
+  ControlBox(int rightArrowSwitchPin = 5, int powerSwitchPin = 6, int leftArrowSwitchPin = 7, int relaySwitchPin = 8);
   void setup();
   void loop();
   ControlBoxState getState() const;

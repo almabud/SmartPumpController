@@ -1,6 +1,6 @@
 #include "control_box.h"
 
-ControlBox::ControlBox(int powerSwitchPin = 6, int leftArrowSwitchPin = 7, int relaySwitchPin = 8) {
+ControlBox::ControlBox(int rightArrowSwitchPin = 5, int powerSwitchPin = 6, int leftArrowSwitchPin = 7, int relaySwitchPin = 8) {
   this->powerSwitchPin = powerSwitchPin;
   this->relaySwitchPin = relaySwitchPin;
   this->leftArrowSwitchPin = leftArrowSwitchPin;  // This should be the child lock switch.
@@ -11,6 +11,8 @@ void ControlBox::setup() {
   // Initial Heart beat should be false and this method must be called at setup.
   setHeartBeat(false);
   pinMode(powerSwitchPin, INPUT_PULLUP);
+  pinMode(leftArrowSwitchPin, INPUT_PULLUP);
+  pinMode(rightArrowSwitchPin, INPUT_PULLUP);
 }
 
 void ControlBox::loop() {
@@ -21,7 +23,7 @@ void ControlBox::loop() {
 }
 
 void ControlBox::onClickPowerSwitch() {
-  if(state.childLock) return;
+  if (state.childLock) return;
 
   bool switchState = digitalRead(powerSwitchPin);
   if (switchState == LOW && state.powerSwitchState == HIGH) {
@@ -58,7 +60,7 @@ void ControlBox::togglePower() {
   changePumpStatus(!state.pumpStatus);
 }
 
-void ControlBox::toggleChildLock(){
+void ControlBox::toggleChildLock() {
   state.childLock = !state.childLock;
   display.drawChildLock(state.childLock);
 }
@@ -98,13 +100,14 @@ void ControlBox::setHeartBeat(bool heartBeat) {
 }
 
 void ControlBox::autoPowerOnOff() {
-  if (!state.bypass && getWaterLevel() <= 5 && state.heartBeat && !state.pumpStatus) {
+  if(state.bypass) return;
+  if (getWaterLevel() <= 5 && state.heartBeat && !state.pumpStatus) {
     changePumpStatus(true);
   }
-  if (!state.bypass && getWaterLevel() > 90 && state.heartBeat && state.pumpStatus) {
+  if (getWaterLevel() > 90 && state.heartBeat && state.pumpStatus) {
     changePumpStatus(false);
   }
-  if (!state.bypass && !state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus) {
+  if (!state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus) {
     changePumpStatus(false);
   }
 }
