@@ -19,6 +19,7 @@ void ControlBox::loop() {
   checkHeartBeat();
   onClickPowerSwitch();
   onClicLeftArrowSwitch();
+  onClicRightArrowSwitch();
   autoPowerOnOff();
 }
 
@@ -42,12 +43,26 @@ void ControlBox::onClicLeftArrowSwitch() {
   if (switchState == LOW && state.leftArrowSwitchState == HIGH) {
     state.childLockSwitchStartTime = millis();
   }
-  if (switchState == LOW && (millis() - state.childLockSwitchStartTime) >= 500 && state.childLockSwitchStartTime > 0) {
+  if (switchState == LOW && (millis() - state.childLockSwitchStartTime) >= 1500 && state.childLockSwitchStartTime > 0) {
     toggleChildLock();
     state.childLockSwitchStartTime = 0;
   }
 
   state.leftArrowSwitchState = switchState;
+}
+
+void ControlBox::onClicRightArrowSwitch() {
+  if (state.childLock) return;
+  bool switchState = digitalRead(rightArrowSwitchPin);
+  if (switchState == LOW && state.rightArrowSwitchState == HIGH) {
+    state.bypassSwitchStartTime = millis();
+  }
+  if (switchState == LOW && (millis() - state.bypassSwitchStartTime) >= 1000 && state.bypassSwitchStartTime > 0) {
+    toggleBypass();
+    state.bypassSwitchStartTime = 0;
+  }
+
+  state.rightArrowSwitchState = switchState;
 }
 
 void ControlBox::changePumpStatus(bool status = false) {
@@ -63,6 +78,11 @@ void ControlBox::togglePower() {
 void ControlBox::toggleChildLock() {
   state.childLock = !state.childLock;
   display.drawChildLock(state.childLock);
+}
+
+void ControlBox::toggleBypass() {
+  state.bypass = !state.bypass;
+  display.drawBypass(state.bypass);
 }
 
 ControlBox::ControlBoxState ControlBox::getState() const {
@@ -100,7 +120,7 @@ void ControlBox::setHeartBeat(bool heartBeat) {
 }
 
 void ControlBox::autoPowerOnOff() {
-  if(state.bypass) return;
+  if (state.bypass) return;
   if (getWaterLevel() <= 5 && state.heartBeat && !state.pumpStatus) {
     changePumpStatus(true);
   }

@@ -12,7 +12,6 @@ public:
     uint16_t pumpRunCnt = 0;
     uint16_t pumpRunTime = 0;
     uint16_t powerConsumption = 0;
-    bool bypass = false;
     bool heartBeat = false;
     unsigned long lastUpdatedHeartBeat = 0;
     // Power switch.
@@ -23,6 +22,10 @@ public:
     unsigned long childLockSwitchStartTime = 0;
     bool leftArrowSwitchState = HIGH;
     bool childLock = false;
+    // Bypass.
+    unsigned long bypassSwitchStartTime = 0;
+    bool rightArrowSwitchState = HIGH;
+    bool bypass = false;
   };
   int powerSwitchPin = 6;
   int relaySwitchPin = 8;
@@ -39,9 +42,11 @@ public:
   void setHeartBeat(bool heartBeat);
   void onClickPowerSwitch();
   void onClicLeftArrowSwitch();
+  void onClicRightArrowSwitch();
   void changePumpStatus(bool status = false);
   void togglePower();
   void toggleChildLock();
+  void toggleBypass();
   void autoPowerOnOff();
 private:
   ControlBoxState state;
