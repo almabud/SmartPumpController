@@ -3,7 +3,7 @@
 const byte WaterTankDataController::aes_key[16] = { 'B', 'd', '@', 4, 6, 4, 2, 5, 8, 's', 'c', 'r', 'e', 't', 't', 't' };
 
 WaterTankDataController::WaterTankDataController(ControlBox& controlBox)
-  : controlBox(controlBox), driver(2000, 4, 4) {
+  : controlBox(controlBox), driver(2000, 12, -1, -1) {
 }
 
 void WaterTankDataController::setup() {

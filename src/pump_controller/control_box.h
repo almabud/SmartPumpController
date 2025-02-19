@@ -34,12 +34,12 @@ public:
 
 
   };
-  int powerSwitchPin = 6;
-  int relaySwitchPin = 8;
+  int relaySwitchPin = 4;
   int leftArrowSwitchPin = 7;
+  int powerSwitchPin = 6;
   int rightArrowSwitchPin = 5;
   Display display;
-  ControlBox(int rightArrowSwitchPin = 5, int powerSwitchPin = 6, int leftArrowSwitchPin = 7, int relaySwitchPin = 8);
+  ControlBox(int relaySwitchPin = 4, int leftArrowSwitchPin = 7, int powerSwitchPin = 6, int rightArrowSwitchPin = 5);
   void setup();
   void loop();
   ControlBoxState getState() const;

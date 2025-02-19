@@ -1,6 +1,6 @@
 #include "control_box.h"
 
-ControlBox::ControlBox(int rightArrowSwitchPin = 5, int powerSwitchPin = 6, int leftArrowSwitchPin = 7, int relaySwitchPin = 8) {
+ControlBox::ControlBox(int relaySwitchPin = 4, int leftArrowSwitchPin = 7, int powerSwitchPin = 6, int rightArrowSwitchPin = 5) {
   this->powerSwitchPin = powerSwitchPin;
   this->relaySwitchPin = relaySwitchPin;
   this->leftArrowSwitchPin = leftArrowSwitchPin;  // This should be the child lock switch.
