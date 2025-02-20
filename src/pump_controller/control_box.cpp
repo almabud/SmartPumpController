@@ -41,7 +41,7 @@ void ControlBox::onClickPowerSwitch() {
              && state.powerSwitchClickCnt < 2) {
     togglePower();
     resetPowerSwitchState();
-  } else if (switchState == LOW && state.powerSwitchState == HIGH && state.powerSwitchClickCnt == 1 && timeElapsed >= 200) {
+  } else if (state.powerSwitchState == HIGH && state.powerSwitchClickCnt == 1 && timeElapsed > 500) {
     resetPowerSwitchState();
   } else if (state.powerSwitchClickCnt == 3 && timeElapsed >= 300) {
     startTimer();
@@ -223,5 +223,7 @@ void ControlBox::startTimer() {
   display.drawTimer(state.timer);
   state.hideTimer = false;
   resetPowerSwitchState();
-  changePumpStatus(true);
+  if (state.timer > 0) {
+    changePumpStatus(true);
+  }
 }
