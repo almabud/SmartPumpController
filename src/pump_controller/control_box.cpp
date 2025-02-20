@@ -22,8 +22,9 @@ void ControlBox::loop() {
   onClicRightArrowSwitch();
   autoPowerOnOff();
   onTimerActivate();
-  upTimer();
+  addTimer();
   minusTimer();
+  onTimerSwitchOff();
 }
 
 void ControlBox::onClickPowerSwitch() {
@@ -150,57 +151,54 @@ void ControlBox::autoPowerOnOff() {
 }
 
 void ControlBox::onTimerActivate() {
+  if (state.powerSwitchClickCnt < 2) return;
   if (state.powerSwitchClickCnt >= 4) {
     state.powerSwitchClickCnt = 4;
-  }
-  if (state.powerSwitchClickCnt < 2) {
+  } else if (state.powerSwitchClickCnt < 2) {
     state.timerSettingStartTime = millis();
-    return;
+    state.timerDisplayBlinkTime = millis();
   }
-  if (millis() - state.timerSettingStartTime >= 400) {
+  if (millis() - state.timerDisplayBlinkTime >= 150) {
     if (state.hideTimer) {
       display.clearTimerDisplay();
     } else {
-      display.drawTimer(state.timer);
+      TimeConversionResult convertedTimer = convertMiliToMinSec();
+      display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
     }
-    state.timerSettingStartTime = millis();
+    state.timerDisplayBlinkTime = millis();
     state.hideTimer = !state.hideTimer;
   }
 }
 
-void ControlBox::upTimer() {
-  if (state.childLock) return;
-  uint8_t tempTimer = state.timer;
+void ControlBox::addTimer() {
+  if (state.childLock || state.powerSwitchClickCnt != 2) return;
+  unsigned long spendTime = millis() - state.timerSettingStartTime;
   bool switchState = digitalRead(rightArrowSwitchPin);
-  if (switchState == LOW && state.leftArrowSwitchState == HIGH && state.powerSwitchClickCnt == 2) {
-    tempTimer--;
-  } else if (switchState == LOW && state.leftArrowSwitchState == LOW && state.powerSwitchClickCnt == 2 && (millis() - state.timerSettingStartTime) >= 300) {
-    state.timerSettingStartTime = 0;
-    tempTimer--;
+  bool add = false;
+  if (switchState == LOW && state.rightArrowSwitchState == HIGH) {
+    add = true;
+  } else if (switchState == LOW && state.rightArrowSwitchState == LOW && spendTime >= 400) {
+    add = true;
   }
-
-  if (tempTimer <= 0) {
-    state.timer = 0;
-  } else {
-    state.timer = tempTimer;
+  if (add == true && state.timer < 5940000) {
+    state.timer += 60000;
+    state.timerSettingStartTime = millis();
   }
 }
 
 void ControlBox::minusTimer() {
-  if (state.childLock) return;
-  uint8_t tempTimer = state.timer;
+  if (state.childLock || state.powerSwitchClickCnt != 2) return;
+  unsigned long spendTime = millis() - state.timerSettingStartTime;
   bool switchState = digitalRead(leftArrowSwitchPin);
-  if (switchState == LOW && state.leftArrowSwitchState == HIGH && state.powerSwitchClickCnt == 2) {
-    tempTimer++;
-  } else if (switchState == LOW && state.leftArrowSwitchState == LOW && state.powerSwitchClickCnt == 2 && (millis() - state.timerSettingStartTime) >= 300) {
-    state.timerSettingStartTime = 0;
-    tempTimer++;
+  bool minus = false;
+  if (switchState == LOW && state.leftArrowSwitchState == HIGH) {
+    minus = true;
+  } else if (switchState == LOW && state.leftArrowSwitchState == LOW && spendTime >= 400) {
+    minus = true;
   }
-
-  if (tempTimer >= 99) {
-    state.timer = 99;
-  } else {
-    state.timer = tempTimer;
+  if (minus == true && state.timer >= 60000) {
+    state.timer -= 60000;
+    state.timerSettingStartTime = millis();
   }
 }
 
@@ -216,14 +214,42 @@ void ControlBox::cancelTimer() {
   state.hideTimer = false;
   resetPowerSwitchState();
   changePumpStatus();
+  state.timerStartTime = 0;
 }
 
 void ControlBox::startTimer() {
-  display.clearTimerDisplay();
-  display.drawTimer(state.timer);
   state.hideTimer = false;
   resetPowerSwitchState();
   if (state.timer > 0) {
+    state.timerStartTime = millis();
     changePumpStatus(true);
+    display.clearTimerDisplay();
+    TimeConversionResult convertedTimer = convertMiliToMinSec();
+    display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
   }
+}
+
+void ControlBox::onTimerSwitchOff() {
+  if (state.timer == 0 || state.powerSwitchClickCnt > 1) return;
+  unsigned long currentTime = millis();
+  unsigned long elapsedTime = currentTime - state.timerStartTime;
+
+  if (elapsedTime >= 1000 && state.timer >= 1000) {
+    state.timer -= elapsedTime;
+    state.timerStartTime = currentTime;
+    TimeConversionResult convertedTimer = convertMiliToMinSec();
+    display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
+  }
+  if (state.timer <= 1000) {
+    cancelTimer();
+  }
+}
+
+ControlBox::TimeConversionResult ControlBox::convertMiliToMinSec() {
+  TimeConversionResult result;
+  unsigned long totalSeconds = state.timer / 1000;
+  result.minutes = totalSeconds / 60;
+  result.seconds = totalSeconds % 60;
+
+  return result;
 }

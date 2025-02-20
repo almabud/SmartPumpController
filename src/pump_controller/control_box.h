@@ -26,13 +26,16 @@ public:
     bool rightArrowSwitchState = HIGH;
     bool bypass = false;
     // timer
-    uint8_t timer = 0;
+    unsigned long timer = 0;
     unsigned long timerStartTime = 0;
     unsigned long timerSettingStartTime = 0;
+    unsigned long timerDisplayBlinkTime = 0;
     uint8_t powerSwitchClickCnt = 0;
     bool hideTimer = true;
-
-
+  };
+  struct TimeConversionResult {
+    uint8_t minutes;
+    uint8_t seconds;
   };
   int relaySwitchPin = 4;
   int leftArrowSwitchPin = 7;
@@ -43,25 +46,27 @@ public:
   void setup();
   void loop();
   ControlBoxState getState() const;
-  void checkHeartBeat();
   uint8_t getWaterLevel(uint16_t distance = UINT16_MAX);
   void setWaterDistance(uint16_t distance);
   void setHeartBeat(bool heartBeat);
-  void onClickPowerSwitch();
-  void onClicLeftArrowSwitch();
-  void onClicRightArrowSwitch();
   void changePumpStatus(bool status = false);
   void togglePower();
   void toggleChildLock();
   void toggleBypass();
-  void autoPowerOnOff();
-  void onTimerActivate();
-  void upTimer();
-  void minusTimer();
-  void resetPowerSwitchState(uint8_t clickCnt=0);
   void cancelTimer();
   void startTimer();
+  TimeConversionResult convertMiliToMinSec();
 private:
   ControlBoxState state;
+  void checkHeartBeat();
+  void onClickPowerSwitch();
+  void onClicLeftArrowSwitch();
+  void onClicRightArrowSwitch();
+  void autoPowerOnOff();
+  void onTimerActivate();
+  void addTimer();
+  void minusTimer();
+  void resetPowerSwitchState(uint8_t clickCnt = 0);
+  void onTimerSwitchOff();
 };
 #endif
