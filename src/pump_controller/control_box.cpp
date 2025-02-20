@@ -30,18 +30,23 @@ void ControlBox::onClickPowerSwitch() {
   if (state.childLock) return;
 
   bool switchState = digitalRead(powerSwitchPin);
+  unsigned long timeElapsed = millis() - state.powerSwitchStartTime;
   if (switchState == LOW && state.powerSwitchState == HIGH) {
-    Serial.println(state.powerSwitchClickCnt);
     state.powerSwitchStartTime = millis();
     state.powerSwitchClickCnt++;
   } else if (switchState == LOW
-             && (millis() - state.powerSwitchStartTime) >= 500
+             && timeElapsed >= 500
              && state.powerSwitchStartTime > 0
              && (state.bypass || state.heartBeat)
              && state.powerSwitchClickCnt < 2) {
     togglePower();
-    state.powerSwitchStartTime = 0;
-    state.powerSwitchClickCnt = 0;
+    resetPowerSwitchState();
+  } else if (switchState == LOW && state.powerSwitchState == HIGH && state.powerSwitchClickCnt == 1 && timeElapsed >= 200) {
+    resetPowerSwitchState();
+  } else if (state.powerSwitchClickCnt == 3 && timeElapsed >= 300) {
+    startTimer();
+  } else if (state.powerSwitchClickCnt == 4) {
+    cancelTimer();
   }
 
   state.powerSwitchState = switchState;
@@ -80,6 +85,9 @@ void ControlBox::changePumpStatus(bool status = false) {
 
 void ControlBox::togglePower() {
   changePumpStatus(!state.pumpStatus);
+  if (!state.pumpStatus) {
+    cancelTimer();
+  }
 }
 
 void ControlBox::toggleChildLock() {
@@ -130,9 +138,11 @@ void ControlBox::autoPowerOnOff() {
   if (state.bypass) return;
   if (getWaterLevel() <= 5 && state.heartBeat && !state.pumpStatus) {
     changePumpStatus(true);
+    cancelTimer();
   }
   if (getWaterLevel() > 90 && state.heartBeat && state.pumpStatus) {
     changePumpStatus(false);
+    cancelTimer();
   }
   if (!state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus) {
     changePumpStatus(false);
@@ -140,8 +150,8 @@ void ControlBox::autoPowerOnOff() {
 }
 
 void ControlBox::onTimerActivate() {
-  if (state.powerSwitchClickCnt > 2) {
-    state.powerSwitchClickCnt = 2;
+  if (state.powerSwitchClickCnt >= 4) {
+    state.powerSwitchClickCnt = 4;
   }
   if (state.powerSwitchClickCnt < 2) {
     state.timerSettingStartTime = millis();
@@ -151,7 +161,6 @@ void ControlBox::onTimerActivate() {
     if (state.hideTimer) {
       display.clearTimerDisplay();
     } else {
-      Serial.println(state.timer);
       display.drawTimer(state.timer);
     }
     state.timerSettingStartTime = millis();
@@ -193,4 +202,26 @@ void ControlBox::minusTimer() {
   } else {
     state.timer = tempTimer;
   }
+}
+
+void ControlBox::resetPowerSwitchState(uint8_t clickCnt = 0) {
+  state.powerSwitchStartTime = 0;
+  state.powerSwitchClickCnt = clickCnt;
+}
+
+void ControlBox::cancelTimer() {
+  state.timer = 0;
+  display.clearTimerDisplay();
+  display.drawTimer(state.timer);
+  state.hideTimer = false;
+  resetPowerSwitchState();
+  changePumpStatus();
+}
+
+void ControlBox::startTimer() {
+  display.clearTimerDisplay();
+  display.drawTimer(state.timer);
+  state.hideTimer = false;
+  resetPowerSwitchState();
+  changePumpStatus(true);
 }

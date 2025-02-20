@@ -58,6 +58,9 @@ public:
   void onTimerActivate();
   void upTimer();
   void minusTimer();
+  void resetPowerSwitchState(uint8_t clickCnt=0);
+  void cancelTimer();
+  void startTimer();
 private:
   ControlBoxState state;
 };
