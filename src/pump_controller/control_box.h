@@ -10,7 +10,7 @@ public:
   struct ControlBoxState {
     uint16_t waterDistance = UINT16_MAX;
     uint16_t pumpRunCnt = 0;
-    uint16_t pumpTotalRunTime = 0; // miliseconds.
+    unsigned long pumpTotalRunTime = 0; // miliseconds.
     float powerConsumption = 0;
     unsigned long pumpStartTime = 0;
     // Hear Beat.

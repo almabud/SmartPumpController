@@ -115,7 +115,7 @@ void ControlBox::changePumpStatus(bool status = false) {
     state.pumpStartTime = millis();
     state.pumpRunCnt++;
     display.drawRuncount(state.pumpRunCnt);
-  } else if (millis() - state.pumpStartTime > 10000 && state.pumpStartTime > 0) {
+  } else if (state.pumpStartTime > 0) {
     state.pumpStartTime = 0;
   }
 }
