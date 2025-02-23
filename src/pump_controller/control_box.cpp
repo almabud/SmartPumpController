@@ -1,18 +1,54 @@
 #include "control_box.h"
 
-ControlBox::ControlBox(int relaySwitchPin = 4, int leftArrowSwitchPin = 7, int powerSwitchPin = 6, int rightArrowSwitchPin = 5) {
+// ACS712 settings (20A model)
+const float CURRENT_SENSITIVITY = 0.100;  // 100mV/A for 20A model
+const float CURRENT_OFFSET = 2.5;         // Update after calibration
+const float CURRENT_THRESHOLD = 0.10;     // Current threshold to detect load ON (100mA)
+
+// Timing and averaging settings
+const unsigned long SAMPLING_INTERVAL = 1000;  // Sample every 100ms when load is ON
+const unsigned long ONE_DAY_MS = 86400000;     // 24 hours in milliseconds
+const int READINGS_PER_AVERAGE = 10;           // Number of readings to average
+
+// Global variables
+float totalWattHours = 0;         // Total consumption in last 24 hours
+unsigned long periodStart = 0;    // Start of 24-hour period
+unsigned long onPeriodStart = 0;  // Start time of current ON period
+
+// Variables for averaging
+float powerReadings[READINGS_PER_AVERAGE];
+int readingIndex = 0;
+unsigned long lastSampleTime = 0;
+float periodPowerSum = 0;
+int periodReadingsCount = 0;
+
+ControlBox::ControlBox(
+  int relaySwitchPin = 4,
+  int leftArrowSwitchPin = 7,
+  int powerSwitchPin = 6,
+  int rightArrowSwitchPin = 5,
+  int voltageSensorPin = A0,
+  int currentSensorPin = A1) {
   this->powerSwitchPin = powerSwitchPin;
   this->relaySwitchPin = relaySwitchPin;
-  this->leftArrowSwitchPin = leftArrowSwitchPin;  // This should be the child lock switch.
+  this->leftArrowSwitchPin = leftArrowSwitchPin;
+  this->rightArrowSwitchPin = rightArrowSwitchPin;
+  this->voltageSensorPin = voltageSensorPin;
+  this->currentSensorPin = currentSensorPin;
+  // this->voltageSensor = ZMPT101B(voltageSensorPin, DEFAULT_FREQUENCY);
 }
 
 void ControlBox::setup() {
   display.setup();
   // Initial Heart beat should be false and this method must be called at setup.
   setHeartBeat(false);
+  pinMode(relaySwitchPin, OUTPUT);
+  digitalWrite(relaySwitchPin, HIGH);
   pinMode(powerSwitchPin, INPUT_PULLUP);
   pinMode(leftArrowSwitchPin, INPUT_PULLUP);
   pinMode(rightArrowSwitchPin, INPUT_PULLUP);
+  // Configure ADC reference
+  analogReference(DEFAULT);
 }
 
 void ControlBox::loop() {
@@ -25,6 +61,7 @@ void ControlBox::loop() {
   addTimer();
   minusTimer();
   onTimerSwitchOff();
+  measureWattPower();
 }
 
 void ControlBox::onClickPowerSwitch() {
@@ -80,8 +117,17 @@ void ControlBox::onClicRightArrowSwitch() {
 
 void ControlBox::changePumpStatus(bool status = false) {
   state.pumpStatus = status;
-  digitalWrite(relaySwitchPin, state.pumpStatus);
+  // Low for realy switch on. If pumpStatus is HIGH/ true then relay pin should be low.
+  digitalWrite(relaySwitchPin, !state.pumpStatus);
   display.drawPumpStatus(state.pumpStatus);
+  if (state.pumpStatus) {
+    state.pumpStartTime = millis();
+    state.powerCalculationTrackTime = millis();
+  } else if (millis() - state.pumpStartTime > 10000 && state.pumpStartTime > 0) {
+    state.pumpTotalRunTime += millis() - state.pumpStartTime;
+    state.pumpStartTime = 0;
+    state.powerCalculationTrackTime = 0;
+  }
 }
 
 void ControlBox::togglePower() {
@@ -226,6 +272,8 @@ void ControlBox::startTimer() {
     display.clearTimerDisplay();
     TimeConversionResult convertedTimer = convertMiliToMinSec();
     display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
+  } else {
+    cancelTimer();
   }
 }
 
@@ -252,4 +300,31 @@ ControlBox::TimeConversionResult ControlBox::convertMiliToMinSec() {
   result.seconds = totalSeconds % 60;
 
   return result;
+}
+
+
+float ControlBox::measureCurrent() {
+  float sum = 0;
+  for (int i = 0; i < 100; i++) {
+    float raw = analogRead(currentSensorPin);
+    float voltage = (raw * 5.0) / 1024.0;
+    sum += abs((voltage - CURRENT_OFFSET) / CURRENT_SENSITIVITY);
+  }
+  return sum / 100.0;
+}
+
+float ControlBox::measureVoltage(){
+
+}
+
+void ControlBox::measureWattPower(){
+  if(!state.pumpStatus || millis() - state.powerCalculationTrackTime < 200) return;
+
+  // Update the track time as we will measure the power after a delay.
+  state.powerCalculationTrackTime = millis();
+
+  float current = measureCurrent();
+  display.drawTodayHistory(false, -1, -1, current);
+
+
 }

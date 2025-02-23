@@ -24,7 +24,12 @@ void Display::setup() {
   tft.fillScreen(ST77XX_BLACK);
   drawWaterTank();
   drawPumpStatus();
+
+  //------
+  drawTodayHistoryTitle();
+  drawTodayHistoryCanvas();
   drawTodayHistory();
+  //---------
   drawChildLock();
   drawBypass();
   drawTimer();
@@ -116,7 +121,16 @@ void Display::drawBypass(bool status = false) {
   tft.print("BYPASS");
 }
 
-void Display::drawTodayHistory(bool today = false, int8_t runCount = -1, int16_t runTime = -1, int16_t powerConsumption = -1) {
+void Display::drawTodayHistoryCanvas() {
+  uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
+  uint8_t boxY = 35;
+  uint8_t boxW = 155 - WATER_TANK_WIDTH;
+  uint8_t boxH = 50;
+  // Draw boundary.
+  tft.drawRect(boxX, boxY, boxW, boxH, ST77XX_WHITE);
+}
+
+void Display::drawTodayHistoryTitle(bool today = false) {
   String title = "Last 24h";
   uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
   uint8_t boxY = 35;
@@ -128,26 +142,64 @@ void Display::drawTodayHistory(bool today = false, int8_t runCount = -1, int16_t
   tft.setTextColor(ST77XX_WHITE);
   // String text, int boxX, int boxY, int boxW, int boxH, int textSize
   Coordinate centerPosition = getCenterPosition(title, boxX, boxY, boxW, boxH, 1);
-  // Draw boundary.
-  tft.drawRect(boxX, boxY, boxW, boxH, ST77XX_WHITE);
   // Remove Existing draw.
   tft.fillRect(boxX + 1, boxY + 1, boxW - 3, boxH - 2, ST77XX_BLACK);
   tft.fillRect(boxX + 1, boxY + 1, boxW - 3, 12, ST77XX_DARKGREY);
   tft.setTextSize(1);
   tft.setCursor(centerPosition.x, boxY + 2);
   tft.println(title);
+}
 
-  if (runCount > 0 && runTime > 0) {
-    tft.setCursor(boxX + 2, boxY + 15);
-    tft.println("Count:" + String(runTime));
-    tft.setCursor(boxX + 2, boxY + 26);
-    tft.println("Time:" + String(runTime) + " min");
-  }
+void Display::drawRunTime(float runTime = 0.0) {
+  uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
+  uint8_t boxY = 35;
+  uint8_t boxW = 155 - WATER_TANK_WIDTH;
+  uint8_t boxH = 50;
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(1);
+  tft.fillRect(boxX + 1, boxY + 15, boxW - 2, 8, ST77XX_BLACK);
+  tft.setCursor(boxX + 2, boxY + 15);
+  tft.print("Time :");
+  tft.print(runTime);
+  tft.print("min");
+}
 
-  if (powerConsumption >= 0) {
-    tft.setCursor(boxX + 2, boxY + 38);
-    tft.println("Power:" + String(powerConsumption) + " KWH");
-  }
+void Display::drawRuncount(uint16_t runCount = 0) {
+  uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
+  uint8_t boxY = 35;
+  uint8_t boxW = 155 - WATER_TANK_WIDTH;
+  uint8_t boxH = 50;
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(1);
+  tft.fillRect(boxX + 1, boxY + 27, boxW - 2, 8, ST77XX_BLACK);
+  tft.setCursor(boxX + 2, boxY + 27);
+  tft.print("Count:");
+  tft.print(runCount);
+}
+
+void Display::drawPowerConsumption(float powerConsumption = 0.0) {
+  uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
+  uint8_t boxY = 35;
+  uint8_t boxW = 155 - WATER_TANK_WIDTH;
+  uint8_t boxH = 50;
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setTextSize(1);
+  tft.fillRect(boxX + 1, boxY + 37, boxW - 2, 8, ST77XX_BLACK);
+  tft.setCursor(boxX + 2, boxY + 37);
+
+  int power = powerConsumption * 100;
+  tft.print("Power:");
+  tft.print(power / 100);
+  tft.print(".");
+  tft.print(power % 100);
+  tft.print("KWH");
+}
+
+void Display::drawTodayHistory(bool today = false, uint16_t runCount = 0, float runTime = 0, float powerConsumption = 0.0) {
+  drawTodayHistoryTitle(today);
+  drawRuncount(runCount);
+  drawPowerConsumption(powerConsumption);
+  drawRunTime(runTime);
 }
 
 void Display::clearTimerDisplay() {

@@ -2,6 +2,7 @@
 #define CONTROL_BOX_H
 
 #include <Arduino.h>
+// #include <ZMPT101B.h>
 #include "display.h"
 
 class ControlBox {
@@ -9,8 +10,10 @@ public:
   struct ControlBoxState {
     uint16_t waterDistance = UINT16_MAX;
     uint16_t pumpRunCnt = 0;
-    uint16_t pumpRunTime = 0;
+    uint16_t pumpTotalRunTime = 0;
     uint16_t powerConsumption = 0;
+    unsigned long pumpStartTime = 0;
+    unsigned long powerCalculationTrackTime = 0;
     bool heartBeat = false;
     unsigned long lastUpdatedHeartBeat = 0;
     // Power switch.
@@ -37,12 +40,15 @@ public:
     uint8_t minutes;
     uint8_t seconds;
   };
-  int relaySwitchPin = 4;
-  int leftArrowSwitchPin = 7;
-  int powerSwitchPin = 6;
-  int rightArrowSwitchPin = 5;
+  int relaySwitchPin, leftArrowSwitchPin, powerSwitchPin, rightArrowSwitchPin, voltageSensorPin, currentSensorPin;
   Display display;
-  ControlBox(int relaySwitchPin = 4, int leftArrowSwitchPin = 7, int powerSwitchPin = 6, int rightArrowSwitchPin = 5);
+  ControlBox(
+    int relaySwitchPin = 4, 
+    int leftArrowSwitchPin = 7, 
+    int powerSwitchPin = 6, 
+    int rightArrowSwitchPin = 5, 
+    int voltageSensorPin = A0, 
+    int currentSensorPin = A1);
   void setup();
   void loop();
   ControlBoxState getState() const;
@@ -56,8 +62,12 @@ public:
   void cancelTimer();
   void startTimer();
   TimeConversionResult convertMiliToMinSec();
+  float measureCurrent();
+  float measureVoltage();
+  void measureWattPower();
 private:
   ControlBoxState state;
+  // ZMPT101B& voltageSensor;
   void checkHeartBeat();
   void onClickPowerSwitch();
   void onClicLeftArrowSwitch();

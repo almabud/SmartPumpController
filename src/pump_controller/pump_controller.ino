@@ -36,5 +36,5 @@ void loop() {
   // display.drawBypass(true);
   // display.drawChildLock(true);
   // display.drawWaterTankHearBeat(true);
-  // display.drawTimer(49, 80);z
+  // display.drawTimer(49, 80);
 }
