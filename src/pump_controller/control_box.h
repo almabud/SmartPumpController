@@ -2,7 +2,7 @@
 #define CONTROL_BOX_H
 
 #include <Arduino.h>
-// #include <ZMPT101B.h>
+#include <ZMPT101B.h>
 #include "display.h"
 
 class ControlBox {
@@ -10,10 +10,10 @@ public:
   struct ControlBoxState {
     uint16_t waterDistance = UINT16_MAX;
     uint16_t pumpRunCnt = 0;
-    uint16_t pumpTotalRunTime = 0;
-    uint16_t powerConsumption = 0;
+    uint16_t pumpTotalRunTime = 0; // miliseconds.
+    float powerConsumption = 0;
     unsigned long pumpStartTime = 0;
-    unsigned long powerCalculationTrackTime = 0;
+    // Hear Beat.
     bool heartBeat = false;
     unsigned long lastUpdatedHeartBeat = 0;
     // Power switch.
@@ -67,7 +67,7 @@ public:
   void measureWattPower();
 private:
   ControlBoxState state;
-  // ZMPT101B& voltageSensor;
+  ZMPT101B voltageSensor;
   void checkHeartBeat();
   void onClickPowerSwitch();
   void onClicLeftArrowSwitch();

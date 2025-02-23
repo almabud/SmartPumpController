@@ -1,26 +1,15 @@
 #include "control_box.h"
 
+#define SENSITIVITY 409.0f
+
 // ACS712 settings (20A model)
 const float CURRENT_SENSITIVITY = 0.100;  // 100mV/A for 20A model
-const float CURRENT_OFFSET = 2.5;         // Update after calibration
-const float CURRENT_THRESHOLD = 0.10;     // Current threshold to detect load ON (100mA)
+const float CURRENT_OFFSET = 2.5;
 
 // Timing and averaging settings
 const unsigned long SAMPLING_INTERVAL = 1000;  // Sample every 100ms when load is ON
 const unsigned long ONE_DAY_MS = 86400000;     // 24 hours in milliseconds
 const int READINGS_PER_AVERAGE = 10;           // Number of readings to average
-
-// Global variables
-float totalWattHours = 0;         // Total consumption in last 24 hours
-unsigned long periodStart = 0;    // Start of 24-hour period
-unsigned long onPeriodStart = 0;  // Start time of current ON period
-
-// Variables for averaging
-float powerReadings[READINGS_PER_AVERAGE];
-int readingIndex = 0;
-unsigned long lastSampleTime = 0;
-float periodPowerSum = 0;
-int periodReadingsCount = 0;
 
 ControlBox::ControlBox(
   int relaySwitchPin = 4,
@@ -28,15 +17,16 @@ ControlBox::ControlBox(
   int powerSwitchPin = 6,
   int rightArrowSwitchPin = 5,
   int voltageSensorPin = A0,
-  int currentSensorPin = A1) {
+  int currentSensorPin = A1)
+  : voltageSensor(voltageSensorPin, DEFAULT_FREQUENCY) {
   this->powerSwitchPin = powerSwitchPin;
   this->relaySwitchPin = relaySwitchPin;
   this->leftArrowSwitchPin = leftArrowSwitchPin;
   this->rightArrowSwitchPin = rightArrowSwitchPin;
   this->voltageSensorPin = voltageSensorPin;
   this->currentSensorPin = currentSensorPin;
-  // this->voltageSensor = ZMPT101B(voltageSensorPin, DEFAULT_FREQUENCY);
 }
+
 
 void ControlBox::setup() {
   display.setup();
@@ -49,6 +39,7 @@ void ControlBox::setup() {
   pinMode(rightArrowSwitchPin, INPUT_PULLUP);
   // Configure ADC reference
   analogReference(DEFAULT);
+  voltageSensor.setSensitivity(SENSITIVITY);
 }
 
 void ControlBox::loop() {
@@ -122,11 +113,10 @@ void ControlBox::changePumpStatus(bool status = false) {
   display.drawPumpStatus(state.pumpStatus);
   if (state.pumpStatus) {
     state.pumpStartTime = millis();
-    state.powerCalculationTrackTime = millis();
+    state.pumpRunCnt++;
+    display.drawRuncount(state.pumpRunCnt);
   } else if (millis() - state.pumpStartTime > 10000 && state.pumpStartTime > 0) {
-    state.pumpTotalRunTime += millis() - state.pumpStartTime;
     state.pumpStartTime = 0;
-    state.powerCalculationTrackTime = 0;
   }
 }
 
@@ -313,17 +303,29 @@ float ControlBox::measureCurrent() {
   return sum / 10.0;
 }
 
-float ControlBox::measureVoltage(){
-
+float ControlBox::measureVoltage() {
+  return voltageSensor.getRmsVoltage(10);
 }
 
-void ControlBox::measureWattPower(){
-  if(!state.pumpStatus || millis() - state.powerCalculationTrackTime < SAMPLING_INTERVAL) return;
-  // Update the track time as we will measure the power after a delay.
-  state.powerCalculationTrackTime = millis();
+void ControlBox::measureWattPower() {
+  if (state.pumpStartTime > 0 && millis() - state.pumpStartTime  >= SAMPLING_INTERVAL) {
+    state.pumpTotalRunTime += (millis() - state.pumpStartTime);
+    display.drawRunTime(state.pumpTotalRunTime / 60000.0);
+  }
+  if (!state.pumpStatus || millis() - state.pumpStartTime < SAMPLING_INTERVAL) return;
 
   float current = measureCurrent();
-  display.drawPowerConsumption(current);
+  float voltage = measureVoltage();
 
+  // Calculate elapsed time.
+  float elapsedTimeHours = (millis() - state.pumpStartTime) / 3600000.0;
 
+  // Compute energy in kWh
+  float powerkW = (current * voltage) / 1000.0;
+  state.powerConsumption += powerkW * elapsedTimeHours;
+  // Display total kWh
+  display.drawPowerConsumption(state.powerConsumption);
+
+  // Reset time tracker.
+  state.pumpStartTime = millis();
 }
