@@ -305,12 +305,12 @@ ControlBox::TimeConversionResult ControlBox::convertMiliToMinSec() {
 
 float ControlBox::measureCurrent() {
   float sum = 0;
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 10; i++) {
     float raw = analogRead(currentSensorPin);
-    float voltage = (raw * 5.0) / 1024.0;
+    float voltage = (raw * 5.0) / 1023.0;
     sum += abs((voltage - CURRENT_OFFSET) / CURRENT_SENSITIVITY);
   }
-  return sum / 100.0;
+  return sum / 10.0;
 }
 
 float ControlBox::measureVoltage(){
@@ -318,13 +318,12 @@ float ControlBox::measureVoltage(){
 }
 
 void ControlBox::measureWattPower(){
-  if(!state.pumpStatus || millis() - state.powerCalculationTrackTime < 200) return;
-
+  if(!state.pumpStatus || millis() - state.powerCalculationTrackTime < SAMPLING_INTERVAL) return;
   // Update the track time as we will measure the power after a delay.
   state.powerCalculationTrackTime = millis();
 
   float current = measureCurrent();
-  display.drawTodayHistory(false, -1, -1, current);
+  display.drawPowerConsumption(current);
 
 
 }
