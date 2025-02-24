@@ -7,8 +7,9 @@ WaterTankDataController::WaterTankDataController(ControlBox& controlBox)
 }
 
 void WaterTankDataController::setup() {
-  if (!driver.init())  // Initialize ASK driver
-    Serial.println("init failed");
+  driver.init();
+  // if (!driver.init())  // Initialize ASK driver
+  //   Serial.println("init failed");
 
   // Initialize AES
   aes128.setKey(aes_key, sizeof(aes_key));
@@ -27,12 +28,10 @@ void WaterTankDataController::receiveWaterDistance() {
     unsigned long timestamp;
 
     if (decryptAndValidate(buf, distance, timestamp)) {
-      // Serial.print("Water Level: ");
       controlBox.setWaterDistance(distance);
       controlBox.setHeartBeat(true);
     } else {
       controlBox.setHeartBeat(false);
-      // Serial.println("Invalid data received");
     }
   }
 }

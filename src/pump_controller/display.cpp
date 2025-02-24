@@ -44,10 +44,10 @@ void Display::setWaterLevel(uint8_t waterLevel) {
   waterLevelState = waterLevel;
   drawWaterLevel();
   int baseY = 165 - getWaterLevelHight();
-
   int lineHeight = 8 * 2;
-  String text = String(waterLevelState) + "%";
-  Coordinate textXY = getCenterPosition(text, WATER_TANK_START_X, WATER_TANK_START_Y, WATER_TANK_WIDTH, WATER_TANK_HIGHT, 2);
+  char titleBuff[4];
+  sprintf(titleBuff, "%d%%", waterLevelState);
+  Coordinate textXY = getCenterPosition(titleBuff, WATER_TANK_START_X, WATER_TANK_START_Y, WATER_TANK_WIDTH, WATER_TANK_HIGHT, 2);
   // Remove the existing write on display.
   if (textXY.y >= getWaterLevelY()) {
     tft.fillRect(WATER_TANK_START_X + 1, textXY.y, WATER_TANK_WIDTH - 3, lineHeight, ST77XX_BLUE);
@@ -57,13 +57,13 @@ void Display::setWaterLevel(uint8_t waterLevel) {
   tft.setTextColor(ST77XX_WHITE);
   tft.setCursor(textXY.x, textXY.y);
   tft.setTextSize(2);
-  tft.println(String(waterLevelState) + "%");
+  tft.print(titleBuff);
 }
 
-Display::Coordinate Display::getCenterPosition(String text, int boxX, int boxY, int boxW, int boxH, int textSize) {
+Display::Coordinate Display::getCenterPosition(char *text, int boxX, int boxY, int boxW, int boxH, int textSize) {
   int outputX, outputY, textW, textH;
   tft.setTextSize(textSize);
-  tft.getTextBounds(text.c_str(), boxX, boxY, &outputX, &outputY, &textW, &textH);
+  tft.getTextBounds(text, boxX, boxY, &outputX, &outputY, &textW, &textH);
   Coordinate centerCoordinate;
   centerCoordinate.x = boxX + (boxW - textW) / 2;
   centerCoordinate.y = boxY + (boxH - textH) / 2;
@@ -82,11 +82,11 @@ void Display::drawPumpStatus(bool pumpStatus = false) {
     tft.setCursor(switchX - 6, switchY - 3);
     //tft.fillCircle(x, y, radius, color)
     tft.fillCircle(switchX, switchY, radius, ST77XX_GREEN);
-    tft.print("ON");
+    tft.print(F("ON"));
   } else {
     tft.setCursor(switchX - 7, switchY - 3);
     tft.fillCircle(switchX, switchY, radius, ST77XX_RED);
-    tft.print("OFF");
+    tft.print(F("OFF"));
   }
 }
 
@@ -103,7 +103,7 @@ void Display::drawChildLock(bool status = false) {
     tft.fillRect(WATER_TANK_START_X + WATER_TANK_WIDTH + 39, WATER_TANK_START_Y + 1, 118 - WATER_TANK_WIDTH, 12, ST77XX_RED);
   }
   tft.setCursor(centerPostion.x, centerPostion.y);
-  tft.print("CHILD LOCK");
+  tft.print(F("CHILD LOCK"));
 }
 
 void Display::drawBypass(bool status = false) {
@@ -118,7 +118,7 @@ void Display::drawBypass(bool status = false) {
     tft.fillRect(WATER_TANK_START_X + WATER_TANK_WIDTH + 39, WATER_TANK_START_Y + 18, 118 - WATER_TANK_WIDTH, 12, ST77XX_RED);
   }
   tft.setCursor(centerPostion.x, centerPostion.y);
-  tft.print("BYPASS");
+  tft.print(F("BYPASS"));
 }
 
 void Display::drawTodayHistoryCanvas() {
@@ -131,7 +131,7 @@ void Display::drawTodayHistoryCanvas() {
 }
 
 void Display::drawTodayHistoryTitle(bool today = false) {
-  String title = "Last 24h";
+  char *title = "Last 24h";
   uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
   uint8_t boxY = 35;
   uint8_t boxW = 155 - WATER_TANK_WIDTH;
@@ -159,9 +159,11 @@ void Display::drawRunTime(float runTime = 0.0) {
   tft.setTextSize(1);
   tft.fillRect(boxX + 1, boxY + 15, boxW - 2, 8, ST77XX_BLACK);
   tft.setCursor(boxX + 2, boxY + 15);
-  tft.print("Time :");
-  tft.print(runTime);
-  tft.print("min");
+  char timeBuff[20];
+  int whole = (int)runTime;
+  int decimal = (int)fmod(runTime * 100, 100);
+  snprintf(timeBuff, sizeof(timeBuff), "Time : %d.%02dmin", whole, abs(decimal));
+  tft.print(timeBuff);
 }
 
 void Display::drawRuncount(uint16_t runCount = 0) {
@@ -173,7 +175,7 @@ void Display::drawRuncount(uint16_t runCount = 0) {
   tft.setTextSize(1);
   tft.fillRect(boxX + 1, boxY + 27, boxW - 2, 8, ST77XX_BLACK);
   tft.setCursor(boxX + 2, boxY + 27);
-  tft.print("Count:");
+  tft.print(F("Count:"));
   tft.print(runCount);
 }
 
@@ -188,11 +190,11 @@ void Display::drawPowerConsumption(float powerConsumption = 0.0) {
   tft.setCursor(boxX + 2, boxY + 37);
 
   int power = powerConsumption * 100;
-  tft.print("Power:");
+  tft.print(F("Power:"));
   tft.print(power / 100);
-  tft.print(".");
+  tft.print(F("."));
   tft.print(power % 100);
-  tft.print("KWH");
+  tft.print(F("KWH"));
 }
 
 void Display::drawTodayHistory(bool today = false, uint16_t runCount = 0, float runTime = 0, float powerConsumption = 0.0) {
@@ -215,20 +217,8 @@ void Display::drawTimer(uint8_t min = 0, uint8_t sec = 0) {
   uint8_t boxY = 88;
   uint8_t boxW = 155 - WATER_TANK_WIDTH;
   clearTimerDisplay();
-  String timer = "";
-
-  if (min < 10) {
-    timer += "0" + String(min);
-  } else {
-    timer += String(min);
-  }
-
-  if (sec < 10) {
-    timer += ":0" + String(sec);
-  } else {
-    timer += ":" + String(sec);
-  }
-
+  char timer[6];
+  sprintf(timer, "%02d:%02d", min, sec);
   Coordinate centerPosition = getCenterPosition(timer, boxX, boxY, boxW, 24, 2);
   tft.setCursor(centerPosition.x, centerPosition.y);
   tft.setTextColor(ST77XX_WHITE);
@@ -252,26 +242,24 @@ void Display::drawWaterTankHearBeat(bool status = false) {
     tft.fillRect(boxX + 1, boxY + 1, boxW - 2, 10, ST77XX_RED);
   }
   tft.setCursor(centerPostion.x, centerPostion.y + 1);
-  tft.print("HEART BEAT");
+  tft.print(F("HEART BEAT"));
 }
 
 // Private
 void Display::drawWaterTank() {
-  String title = "LEVEL";
+  const char title[] = "LEVEL";
   tft.drawRect(WATER_TANK_START_X, WATER_TANK_START_Y, WATER_TANK_WIDTH, WATER_TANK_HIGHT, ST77XX_WHITE);
   tft.fillRect(WATER_TANK_START_X + 1, WATER_TANK_START_Y + 1, WATER_TANK_WIDTH - 2, 14, ST77XX_DARKGREY);
   tft.setTextSize(1);
   tft.setTextColor(ST77XX_WHITE);
   Coordinate titleXY = getCenterPosition(title, WATER_TANK_START_X, WATER_TANK_START_Y, WATER_TANK_WIDTH, WATER_TANK_HIGHT, 1);
   tft.setCursor(titleXY.x, WATER_TANK_START_Y + 3);
-  tft.println(title);
+  tft.println(F("LEVEL"));
 }
 
-void Display::drawWaterLevel(bool pumpStatus = false) {
+void Display::drawWaterLevel() {
   tft.fillRect(WATER_TANK_START_X + 1, 17, WATER_TANK_WIDTH - 2, WATER_TANK_HIGHT, ST77XX_BLACK);
   tft.fillRect(WATER_TANK_START_X + 1, getWaterLevelY(), WATER_TANK_WIDTH - 2, getWaterLevelHight(), ST77XX_BLUE);
-  if (pumpStatus) {
-  }
 }
 
 uint8_t Display::getWaterLevelY() {
