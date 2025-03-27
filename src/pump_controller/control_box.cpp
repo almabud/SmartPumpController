@@ -53,6 +53,17 @@ void ControlBox::loop() {
   minusTimer();
   onTimerSwitchOff();
   measureWattPower();
+  statResetOn30Days();
+}
+
+void ControlBox::statResetOn30Days(){
+  unsigned long currentTime = millis();
+  if((currentTime - state.upTime) >= STATE_RESET_TIME){
+    state.pumpRunCnt = 0;
+    state.pumpTotalRunTime = 0;
+    state.powerConsumption = 0;
+    state.upTime = currentTime;
+  }
 }
 
 void ControlBox::onClickPowerSwitch() {

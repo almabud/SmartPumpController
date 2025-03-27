@@ -5,9 +5,12 @@
 #include <ZMPT101B.h>
 #include "display.h"
 
+const unsigned long STATE_RESET_TIME = 2592000000UL;
+
 class ControlBox {
 public:
   struct ControlBoxState {
+    unsigned long upTime = 0;
     uint16_t waterDistance = UINT16_MAX;
     uint16_t pumpRunCnt = 0;
     unsigned long pumpTotalRunTime = 0; // miliseconds.
@@ -65,6 +68,7 @@ public:
   float measureCurrent();
   float measureVoltage();
   void measureWattPower(bool force = false);
+  void statResetOn30Days();
 private:
   ControlBoxState state;
   ZMPT101B voltageSensor;

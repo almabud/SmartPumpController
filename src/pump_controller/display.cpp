@@ -135,7 +135,7 @@ void Display::drawTodayHistoryCanvas() {
 }
 
 void Display::drawTodayHistoryTitle(bool today = false) {
-  char *title = "Last 24h";
+  char *title = "Last 30 days";
   uint8_t boxX = WATER_TANK_START_X + WATER_TANK_WIDTH + 2;
   uint8_t boxY = 35;
   uint8_t boxW = 155 - WATER_TANK_WIDTH;
