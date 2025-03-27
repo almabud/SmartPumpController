@@ -64,7 +64,7 @@ public:
   TimeConversionResult convertMiliToMinSec();
   float measureCurrent();
   float measureVoltage();
-  void measureWattPower();
+  void measureWattPower(bool force = false);
 private:
   ControlBoxState state;
   ZMPT101B voltageSensor;

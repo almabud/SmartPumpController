@@ -4,6 +4,7 @@
 #define TFT_RST A4
 #define TFT_DC A3
 #define ST77XX_DARKGREY 0x7BEF  // 123, 123, 123
+#define TFT_LED A2
 
 // Initialize display module.
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
@@ -17,6 +18,9 @@ uint8_t waterLevelState = 255;
 
 
 void Display::setup() {
+  // Initialize backlid light
+  pinMode(TFT_LED, OUTPUT);
+  analogWrite(TFT_LED, 128);
   // Initialize display
   tft.initR(INITR_BLACKTAB);
   // Make the display landscape.

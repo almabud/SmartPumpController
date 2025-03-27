@@ -116,6 +116,7 @@ void ControlBox::changePumpStatus(bool status = false) {
     state.pumpRunCnt++;
     display.drawRuncount(state.pumpRunCnt);
   } else if (state.pumpStartTime > 0) {
+    measureWattPower(true);
     state.pumpStartTime = 0;
   }
 }
@@ -183,6 +184,7 @@ void ControlBox::autoPowerOnOff() {
   }
   if (!state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus) {
     changePumpStatus(false);
+    cancelTimer();
   }
 }
 
@@ -250,15 +252,18 @@ void ControlBox::cancelTimer() {
   state.hideTimer = false;
   resetPowerSwitchState();
   changePumpStatus();
-  state.timerStartTime = 0;
 }
 
 void ControlBox::startTimer() {
+  if(!state.heartBeat && !state.bypass){
+    cancelTimer();
+  }
+
   state.hideTimer = false;
   resetPowerSwitchState();
   if (state.timer > 0) {
-    state.timerStartTime = millis();
     changePumpStatus(true);
+    state.timerStartTime = state.pumpStartTime;
     display.clearTimerDisplay();
     TimeConversionResult convertedTimer = convertMiliToMinSec();
     display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
@@ -278,8 +283,12 @@ void ControlBox::onTimerSwitchOff() {
     TimeConversionResult convertedTimer = convertMiliToMinSec();
     display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
   }
-  if (state.timer <= 1000) {
-    cancelTimer();
+  else if (state.timer <= 1000) {
+    state.timer -= elapsedTime;
+    state.timerStartTime = currentTime;
+  }
+  if (state.timer <= 0){
+     cancelTimer();
   }
 }
 
@@ -307,18 +316,19 @@ float ControlBox::measureVoltage() {
   return voltageSensor.getRmsVoltage(10);
 }
 
-void ControlBox::measureWattPower() {
-  if (state.pumpStartTime > 0 && millis() - state.pumpStartTime  >= SAMPLING_INTERVAL) {
-    state.pumpTotalRunTime += (millis() - state.pumpStartTime);
+void ControlBox::measureWattPower(bool force = false) {
+  unsigned long currentTime = millis();
+  if ( force || (state.pumpStartTime > 0 && currentTime - state.pumpStartTime  >= SAMPLING_INTERVAL)) {
+    state.pumpTotalRunTime += (currentTime - state.pumpStartTime);
     display.drawRunTime(state.pumpTotalRunTime / 60000.0);
   }
-  if (!state.pumpStatus || millis() - state.pumpStartTime < SAMPLING_INTERVAL) return;
+  if (!force && (!state.pumpStatus || currentTime - state.pumpStartTime < SAMPLING_INTERVAL)) return;
 
   float current = measureCurrent();
   float voltage = measureVoltage();
 
   // Calculate elapsed time.
-  float elapsedTimeHours = (millis() - state.pumpStartTime) / 3600000.0;
+  float elapsedTimeHours = (currentTime - state.pumpStartTime) / 3600000.0;
 
   // Compute energy in kWh
   float powerkW = (current * voltage) / 1000.0;
@@ -327,5 +337,5 @@ void ControlBox::measureWattPower() {
   display.drawPowerConsumption(state.powerConsumption);
 
   // Reset time tracker.
-  state.pumpStartTime = millis();
+  state.pumpStartTime = currentTime;
 }
