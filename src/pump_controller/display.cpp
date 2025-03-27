@@ -198,7 +198,8 @@ void Display::drawPowerConsumption(float powerConsumption = 0.0) {
   tft.print(power / 100);
   tft.print(F("."));
   tft.print(power % 100);
-  tft.print(F("KWH"));
+  // tft.print(F("KWH"));
+  tft.print(F("WH"));
 }
 
 void Display::drawTodayHistory(bool today = false, uint16_t runCount = 0, float runTime = 0, float powerConsumption = 0.0) {

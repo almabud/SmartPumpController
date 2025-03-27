@@ -331,8 +331,9 @@ void ControlBox::measureWattPower(bool force = false) {
   float elapsedTimeHours = (currentTime - state.pumpStartTime) / 3600000.0;
 
   // Compute energy in kWh
-  float powerkW = (current * voltage) / 1000.0;
-  state.powerConsumption += powerkW * elapsedTimeHours;
+  // float powerkW = (current * voltage) / 1000.0;
+  float powerW = (current * voltage);
+  state.powerConsumption += powerW * elapsedTimeHours;
   // Display total kWh
   display.drawPowerConsumption(state.powerConsumption);
 
