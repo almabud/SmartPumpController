@@ -120,9 +120,9 @@ void ControlBox::onClicRightArrowSwitch() {
 void ControlBox::changePumpStatus(bool status = false) {
   state.pumpStatus = status;
   // Low for realy switch on. If pumpStatus is HIGH/ true then relay pin should be low.
-  digitalWrite(relaySwitchPin, !state.pumpStatus);
-  display.drawPumpStatus(state.pumpStatus);
   if (state.pumpStatus) {
+    Serial.println(getWaterLevel(state.waterDistance));
+    if(getWaterLevel(state.waterDistance) > 95 && !state.bypass) return;
     state.pumpStartTime = millis();
     state.pumpRunCnt++;
     display.drawRuncount(state.pumpRunCnt);
@@ -130,6 +130,8 @@ void ControlBox::changePumpStatus(bool status = false) {
     measureWattPower(true);
     state.pumpStartTime = 0;
   }
+  digitalWrite(relaySwitchPin, !state.pumpStatus);
+  display.drawPumpStatus(state.pumpStatus);
 }
 
 void ControlBox::togglePower() {
@@ -160,11 +162,7 @@ void ControlBox::checkHeartBeat() {
 }
 
 uint8_t ControlBox::getWaterLevel(uint16_t distance = UINT16_MAX) {
-  if (distance == UINT16_MAX) {
-    return map(state.waterDistance, 0, 130, 0, 100);
-  }
-
-  return map(distance, 0, 130, 0, 100);
+  return map(distance, 17, 81, 100, 0);
 }
 
 void ControlBox::setWaterDistance(uint16_t distance) {
