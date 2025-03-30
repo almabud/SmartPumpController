@@ -342,10 +342,7 @@ void ControlBox::measureWattPower(bool force = false) {
   float current = measureCurrent();
   float voltage = measureVoltage();
 
-  if(!force && (current < 1 || voltage < 200)) {
-    cancelTimer();
-    return;
-  }
+  if(!force && (current < 1 || voltage < 200)) return;
   if (force || (state.pumpStartTime > 0 && currentTime - state.pumpStartTime >= SAMPLING_INTERVAL)) {
     state.pumpTotalRunTime += (currentTime - state.pumpStartTime);
     display.drawRunTime(state.pumpTotalRunTime / 60000.0);
