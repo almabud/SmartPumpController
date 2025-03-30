@@ -343,7 +343,7 @@ void ControlBox::measureWattPower(bool force = false) {
   float voltage = measureVoltage();
 
   if(current < 1 || voltage < 200) {
-    changePumpStatus();
+    cancelTimer();
     return;
   }
   if (force || (state.pumpStartTime > 0 && currentTime - state.pumpStartTime >= SAMPLING_INTERVAL)) {
