@@ -36,6 +36,7 @@ public:
     unsigned long timerStartTime = 0;
     unsigned long timerSettingStartTime = 0;
     unsigned long timerDisplayBlinkTime = 0;
+    uint8_t leftArrowSwitchClickCnt = 0;
     uint8_t powerSwitchClickCnt = 0;
     bool hideTimer = true;
   };
@@ -77,10 +78,10 @@ private:
   void onClicLeftArrowSwitch();
   void onClicRightArrowSwitch();
   void autoPowerOnOff();
+  void activateTimerSettings();
   void onTimerActivate();
   void addTimer();
   void minusTimer();
-  void resetPowerSwitchState(uint8_t clickCnt = 0);
   void onTimerSwitchOff();
 };
 #endif

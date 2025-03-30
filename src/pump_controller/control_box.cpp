@@ -56,9 +56,9 @@ void ControlBox::loop() {
   statResetOn30Days();
 }
 
-void ControlBox::statResetOn30Days(){
+void ControlBox::statResetOn30Days() {
   unsigned long currentTime = millis();
-  if((currentTime - state.upTime) >= STATE_RESET_TIME){
+  if ((currentTime - state.upTime) >= STATE_RESET_TIME) {
     state.pumpRunCnt = 0;
     state.pumpTotalRunTime = 0;
     state.powerConsumption = 0;
@@ -70,33 +70,47 @@ void ControlBox::onClickPowerSwitch() {
   if (state.childLock) return;
 
   bool switchState = digitalRead(powerSwitchPin);
-  unsigned long timeElapsed = millis() - state.powerSwitchStartTime;
+  unsigned long timeElapsed = 0;
+
+  if(state.powerSwitchStartTime > 0){
+    timeElapsed = millis() - state.powerSwitchStartTime;
+  }
   if (switchState == LOW && state.powerSwitchState == HIGH) {
     state.powerSwitchStartTime = millis();
     state.powerSwitchClickCnt++;
-  } else if (switchState == LOW
-             && timeElapsed >= 500
-             && state.powerSwitchStartTime > 0
-             && (state.bypass || state.heartBeat)
-             && state.powerSwitchClickCnt < 2) {
-    togglePower();
-    resetPowerSwitchState();
-  } else if (state.powerSwitchState == HIGH && state.powerSwitchClickCnt == 1 && timeElapsed > 500) {
-    resetPowerSwitchState();
-  } else if (state.powerSwitchClickCnt == 3 && timeElapsed >= 300) {
-    startTimer();
-  } else if (state.powerSwitchClickCnt == 4) {
-    cancelTimer();
   }
-
+  if (switchState == LOW && timeElapsed >= 500 && state.timerSettingStartTime == 0 && state.powerSwitchClickCnt == 1) {
+    togglePower();
+    state.powerSwitchStartTime = 0;
+    state.powerSwitchClickCnt = 0;
+  }
+  if (state.powerSwitchClickCnt == 1 && state.timerSettingStartTime > 0){
+    startTimer();
+  }
+  if(state.powerSwitchClickCnt == 2 && state.timerSettingStartTime == 0){
+    activateTimerSettings();
+    state.powerSwitchStartTime = 0;
+    state.powerSwitchClickCnt = 0;
+  }
+  if(state.powerSwitchClickCnt == 2 && state.timerSettingStartTime > 0){
+    cancelTimer();
+    state.powerSwitchClickCnt = 0;
+    state.powerSwitchStartTime = 0;
+  }
+  if(state.powerSwitchStartTime > 0 && timeElapsed >= 500 && state.powerSwitchState == HIGH){
+    state.powerSwitchClickCnt = 0;
+    state.powerSwitchStartTime = 0;
+  }
   state.powerSwitchState = switchState;
 }
 
 void ControlBox::onClicLeftArrowSwitch() {
   bool switchState = digitalRead(leftArrowSwitchPin);
-  if (switchState == LOW && state.leftArrowSwitchState == HIGH && state.powerSwitchClickCnt < 2) {
+  unsigned long timeElapsed = millis() - state.childLockSwitchStartTime;
+
+  if (switchState == LOW && state.leftArrowSwitchState == HIGH) {
     state.childLockSwitchStartTime = millis();
-  } else if (switchState == LOW && (millis() - state.childLockSwitchStartTime) >= 1500 && state.childLockSwitchStartTime > 0 && state.powerSwitchClickCnt <= 2) {
+  }else if (switchState == LOW && timeElapsed >= 1500 && state.childLockSwitchStartTime > 0 && state.timerSettingStartTime <= 0) {
     toggleChildLock();
     state.childLockSwitchStartTime = 0;
   }
@@ -107,9 +121,9 @@ void ControlBox::onClicLeftArrowSwitch() {
 void ControlBox::onClicRightArrowSwitch() {
   if (state.childLock) return;
   bool switchState = digitalRead(rightArrowSwitchPin);
-  if (switchState == LOW && state.rightArrowSwitchState == HIGH && state.powerSwitchClickCnt < 2) {
+  if (switchState == LOW && state.rightArrowSwitchState == HIGH) {
     state.bypassSwitchStartTime = millis();
-  } else if (switchState == LOW && (millis() - state.bypassSwitchStartTime) >= 1000 && state.bypassSwitchStartTime > 0 && state.powerSwitchClickCnt < 2) {
+  } else if (switchState == LOW && (millis() - state.bypassSwitchStartTime) >= 1000 && state.bypassSwitchStartTime > 0 && state.timerSettingStartTime <= 0) {
     toggleBypass();
     state.bypassSwitchStartTime = 0;
   }
@@ -121,8 +135,7 @@ void ControlBox::changePumpStatus(bool status = false) {
   state.pumpStatus = status;
   // Low for realy switch on. If pumpStatus is HIGH/ true then relay pin should be low.
   if (state.pumpStatus) {
-    Serial.println(getWaterLevel(state.waterDistance));
-    if(getWaterLevel(state.waterDistance) > 95 && !state.bypass) return;
+    if (getWaterLevel(state.waterDistance) > 95 && !state.bypass) return;
     state.pumpStartTime = millis();
     state.pumpRunCnt++;
     display.drawRuncount(state.pumpRunCnt);
@@ -162,6 +175,8 @@ void ControlBox::checkHeartBeat() {
 }
 
 uint8_t ControlBox::getWaterLevel(uint16_t distance = UINT16_MAX) {
+  if(distance == UINT16_MAX) distance = state.waterDistance;
+  
   return map(distance, 17, 81, 100, 0);
 }
 
@@ -197,14 +212,14 @@ void ControlBox::autoPowerOnOff() {
   }
 }
 
-void ControlBox::onTimerActivate() {
-  if (state.powerSwitchClickCnt < 2) return;
-  if (state.powerSwitchClickCnt >= 4) {
-    state.powerSwitchClickCnt = 4;
-  } else if (state.powerSwitchClickCnt < 2) {
+void ControlBox::activateTimerSettings(){
     state.timerSettingStartTime = millis();
     state.timerDisplayBlinkTime = millis();
-  }
+}
+
+void ControlBox::onTimerActivate() {
+  if(state.timerSettingStartTime <= 0) return;
+
   if (millis() - state.timerDisplayBlinkTime >= 150) {
     if (state.hideTimer) {
       display.clearTimerDisplay();
@@ -218,7 +233,8 @@ void ControlBox::onTimerActivate() {
 }
 
 void ControlBox::addTimer() {
-  if (state.childLock || state.powerSwitchClickCnt != 2) return;
+  if (state.childLock || state.timerSettingStartTime == 0) return;
+
   unsigned long spendTime = millis() - state.timerSettingStartTime;
   bool switchState = digitalRead(rightArrowSwitchPin);
   bool add = false;
@@ -234,7 +250,7 @@ void ControlBox::addTimer() {
 }
 
 void ControlBox::minusTimer() {
-  if (state.childLock || state.powerSwitchClickCnt != 2) return;
+  if (state.childLock || state.timerSettingStartTime == 0) return;
   unsigned long spendTime = millis() - state.timerSettingStartTime;
   bool switchState = digitalRead(leftArrowSwitchPin);
   bool minus = false;
@@ -249,40 +265,40 @@ void ControlBox::minusTimer() {
   }
 }
 
-void ControlBox::resetPowerSwitchState(uint8_t clickCnt = 0) {
-  state.powerSwitchStartTime = 0;
-  state.powerSwitchClickCnt = clickCnt;
-}
+// void ControlBox::resetPowerSwitchState(uint8_t clickCnt = 0) {
+//   state.powerSwitchStartTime = 0;
+//   state.powerSwitchClickCnt = clickCnt;
+// }
 
 void ControlBox::cancelTimer() {
   state.timer = 0;
   display.clearTimerDisplay();
   display.drawTimer(state.timer);
   state.hideTimer = false;
-  resetPowerSwitchState();
+  state.timerSettingStartTime = 0;
   changePumpStatus();
 }
 
 void ControlBox::startTimer() {
-  if(!state.heartBeat && !state.bypass){
+  if (!state.heartBeat && !state.bypass) {
     cancelTimer();
   }
 
   state.hideTimer = false;
-  resetPowerSwitchState();
   if (state.timer > 0) {
     changePumpStatus(true);
     state.timerStartTime = state.pumpStartTime;
     display.clearTimerDisplay();
     TimeConversionResult convertedTimer = convertMiliToMinSec();
     display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
+    state.timerSettingStartTime = 0;
   } else {
     cancelTimer();
   }
 }
 
 void ControlBox::onTimerSwitchOff() {
-  if (state.timer == 0 || state.powerSwitchClickCnt > 1) return;
+  if (state.timer == 0 || state.timerSettingStartTime > 0) return;
   unsigned long currentTime = millis();
   unsigned long elapsedTime = currentTime - state.timerStartTime;
 
@@ -291,13 +307,12 @@ void ControlBox::onTimerSwitchOff() {
     state.timerStartTime = currentTime;
     TimeConversionResult convertedTimer = convertMiliToMinSec();
     display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
-  }
-  else if (state.timer <= 1000) {
+  } else if (state.timer <= 1000) {
     state.timer -= elapsedTime;
     state.timerStartTime = currentTime;
   }
-  if (state.timer <= 0){
-     cancelTimer();
+  if (state.timer <= 0) {
+    cancelTimer();
   }
 }
 
@@ -327,7 +342,7 @@ float ControlBox::measureVoltage() {
 
 void ControlBox::measureWattPower(bool force = false) {
   unsigned long currentTime = millis();
-  if ( force || (state.pumpStartTime > 0 && currentTime - state.pumpStartTime  >= SAMPLING_INTERVAL)) {
+  if (force || (state.pumpStartTime > 0 && currentTime - state.pumpStartTime >= SAMPLING_INTERVAL)) {
     state.pumpTotalRunTime += (currentTime - state.pumpStartTime);
     display.drawRunTime(state.pumpTotalRunTime / 60000.0);
   }

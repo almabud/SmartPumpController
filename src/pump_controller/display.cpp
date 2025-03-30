@@ -163,10 +163,26 @@ void Display::drawRunTime(float runTime = 0.0) {
   tft.setTextSize(1);
   tft.fillRect(boxX + 1, boxY + 15, boxW - 2, 8, ST77XX_BLACK);
   tft.setCursor(boxX + 2, boxY + 15);
-  char timeBuff[20];
+  char timeBuff[32];
   int whole = (int)runTime;
   int decimal = (int)fmod(runTime * 100, 100);
-  snprintf(timeBuff, sizeof(timeBuff), "Time : %d.%02dmin", whole, abs(decimal));
+  // String timeText = "Time : " + String(whole) + "." + (decimal < 10 ? "0" : "") + String(decimal) + "min";
+  memset(timeBuff, 0, sizeof(timeBuff));
+  char temp[8];
+
+  strcpy(timeBuff, "Time:");
+  itoa(whole, temp, 10);
+  strcat(timeBuff, temp);
+  strcat(timeBuff, ".");
+
+  if (decimal < 10) {
+    strcat(timeBuff, "0");
+  }
+  memset(temp, 0, sizeof(temp));
+  itoa(decimal, temp, 10);
+  strcat(timeBuff, temp);
+
+  strcat(timeBuff, "min");
   tft.print(timeBuff);
 }
 
