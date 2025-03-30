@@ -342,7 +342,7 @@ void ControlBox::measureWattPower(bool force = false) {
   float current = measureCurrent();
   float voltage = measureVoltage();
 
-  if(current < 1 || voltage < 200) {
+  if(!force && (current < 1 || voltage < 200)) {
     cancelTimer();
     return;
   }
