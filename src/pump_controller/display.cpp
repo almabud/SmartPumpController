@@ -209,7 +209,7 @@ void Display::drawPowerConsumption(float powerConsumption = 0.0) {
   tft.fillRect(boxX + 1, boxY + 37, boxW - 2, 8, ST77XX_BLACK);
   tft.setCursor(boxX + 2, boxY + 37);
 
-  int power = powerConsumption * 100;
+  unsigned long power = powerConsumption * 100;
   tft.print(F("Power:"));
   tft.print(power / 100);
   tft.print(F("."));
