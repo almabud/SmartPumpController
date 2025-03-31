@@ -79,6 +79,9 @@ void ControlBox::onClickPowerSwitch() {
     state.powerSwitchStartTime = millis();
     state.powerSwitchClickCnt++;
   }
+  if (state.powerSwitchClickCnt > 2){
+    state.powerSwitchClickCnt = 2;
+  }
   if (switchState == LOW && timeElapsed >= 500 && state.timerSettingStartTime == 0 && state.powerSwitchClickCnt == 1) {
     togglePower();
     state.powerSwitchStartTime = 0;
@@ -297,17 +300,21 @@ void ControlBox::onTimerSwitchOff() {
   unsigned long currentTime = millis();
   unsigned long elapsedTime = currentTime - state.timerStartTime;
 
-  if (elapsedTime >= 1000 && state.timer >= 1000) {
-    state.timer -= elapsedTime;
+  if (elapsedTime >= 1000) {
+    if (state.timer > elapsedTime) {
+      state.timer -= elapsedTime;
+    } else {
+      state.timer = 0;
+    }
+
     state.timerStartTime = currentTime;
-    TimeConversionResult convertedTimer = convertMiliToMinSec();
-    display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
-  } else if (state.timer <= 1000) {
-    state.timer -= elapsedTime;
-    state.timerStartTime = currentTime;
-  }
-  if (state.timer <= 0) {
-    cancelTimer();
+
+    if (state.timer > 0) {
+      TimeConversionResult convertedTimer = convertMiliToMinSec();
+      display.drawTimer(convertedTimer.minutes, convertedTimer.seconds);
+    } else {
+      cancelTimer();
+    }
   }
 }
 
@@ -342,7 +349,7 @@ void ControlBox::measureWattPower(bool force = false) {
   float current = measureCurrent();
   float voltage = measureVoltage();
 
-  if(!force && (current < 1 || voltage < 200)) return;
+  if (!force && (current < 1 || voltage < 200)) return;
   if (force || (state.pumpStartTime > 0 && currentTime - state.pumpStartTime >= SAMPLING_INTERVAL)) {
     state.pumpTotalRunTime += (currentTime - state.pumpStartTime);
     display.drawRunTime(state.pumpTotalRunTime / 60000.0);
