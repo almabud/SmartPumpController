@@ -344,27 +344,33 @@ float ControlBox::measureVoltage() {
 
 void ControlBox::measureWattPower(bool force = false) {
   unsigned long currentTime = millis();
-  if (!force && (!state.pumpStatus || currentTime - state.pumpStartTime < SAMPLING_INTERVAL)) return;
+
+  // Skip if not forced and pump is off or hasn't reached the sampling interval
+  if (!force && (!state.pumpStatus || (currentTime - state.pumpStartTime < SAMPLING_INTERVAL))) return;
 
   float current = measureCurrent();
   float voltage = measureVoltage();
 
-  if (!force && (current < 1 || voltage < 200)) return;
-  if (force || (state.pumpStartTime > 0 && currentTime - state.pumpStartTime >= SAMPLING_INTERVAL)) {
-    state.pumpTotalRunTime += (currentTime - state.pumpStartTime);
-    display.drawRunTime(state.pumpTotalRunTime / 60000.0);
+  // Ignore faulty readings
+  if (current < 1.0 || voltage < 200.0) return;
+
+  // Compute elapsed time since last measurement
+  unsigned long elapsedMillis = currentTime - state.pumpStartTime;
+  float elapsedHours = elapsedMillis / 3600000.0;
+
+  // Update runtime display if conditions met
+  if (force || (state.pumpStartTime > 0 && elapsedMillis >= SAMPLING_INTERVAL)) {
+    state.pumpTotalRunTime += elapsedMillis;
+    display.drawRunTime(state.pumpTotalRunTime / 60000.0);  // Convert to minutes
   }
 
-  // Calculate elapsed time.
-  float elapsedTimeHours = (currentTime - state.pumpStartTime) / 3600000.0;
+  // Accumulate power consumption (W × h = Wh)
+  float powerW = current * voltage;
+  state.powerConsumption += powerW * elapsedHours;
 
-  // Compute energy in kWh
-  // float powerkW = (current * voltage) / 1000.0;
-  float powerW = (current * voltage);
-  state.powerConsumption += powerW * elapsedTimeHours;
-  // Display total kWh
+  // Update power consumption display (in kWh = WH/1000.0)
   display.drawPowerConsumption(state.powerConsumption);
 
-  // Reset time tracker.
+  // Reset for next interval
   state.pumpStartTime = currentTime;
 }
