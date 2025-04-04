@@ -79,7 +79,7 @@ void ControlBox::onClickPowerSwitch() {
     state.powerSwitchStartTime = millis();
     state.powerSwitchClickCnt++;
   }
-  if (state.powerSwitchClickCnt > 2){
+  if (state.powerSwitchClickCnt > 2) {
     state.powerSwitchClickCnt = 2;
   }
   if (switchState == LOW && timeElapsed >= 500 && state.timerSettingStartTime == 0 && state.powerSwitchClickCnt == 1) {
@@ -138,7 +138,7 @@ void ControlBox::changePumpStatus(bool status = false) {
   state.pumpStatus = status;
   // Low for realy switch on. If pumpStatus is HIGH/ true then relay pin should be low.
   if (state.pumpStatus) {
-    if (getWaterLevel(state.waterDistance) > 95 && !state.bypass) return;
+    if (getWaterLevel(state.waterDistance) >= 100 && !state.bypass) return;
     state.pumpStartTime = millis();
     state.pumpRunCnt++;
     display.drawRuncount(state.pumpRunCnt);
@@ -179,8 +179,10 @@ void ControlBox::checkHeartBeat() {
 
 uint8_t ControlBox::getWaterLevel(uint16_t distance = UINT16_MAX) {
   if (distance == UINT16_MAX) distance = state.waterDistance;
+  if (distance <= 17) distance = 17;
+  if (distance >= 36) distance = 36;
 
-  return map(distance, 17, 81, 100, 0);
+  return map(distance, 36, 17, 0, 100);
 }
 
 void ControlBox::setWaterDistance(uint16_t distance) {
@@ -201,16 +203,14 @@ void ControlBox::setHeartBeat(bool heartBeat) {
 
 void ControlBox::autoPowerOnOff() {
   if (state.bypass) return;
-  if (getWaterLevel() <= 30 && state.heartBeat && !state.pumpStatus) {
-    changePumpStatus(true);
+  if (!state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus) {
     cancelTimer();
+  }
+  if (getWaterLevel() <= 30 && state.heartBeat && !state.pumpStatus) {
+    cancelTimer();
+    changePumpStatus(true);
   }
   if (getWaterLevel() >= 100 && state.heartBeat && state.pumpStatus) {
-    changePumpStatus(false);
-    cancelTimer();
-  }
-  if (!state.heartBeat && (millis() - state.lastUpdatedHeartBeat) >= 30000 && state.pumpStatus) {
-    changePumpStatus(false);
     cancelTimer();
   }
 }
