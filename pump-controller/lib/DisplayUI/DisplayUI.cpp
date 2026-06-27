@@ -29,8 +29,9 @@ void DisplayUI::begin() {
 }
 
 void DisplayUI::update(SystemState& state, ButtonEvent event) {
-    // Phase 1: home screen only. Menu navigation added in Phase 2.
+    if (!state.hasChanged(Consumer::DISPLAY_CONSUMER)) return;
     _drawHomeScreen(state);
+    state.markSeen(Consumer::DISPLAY_CONSUMER);
 }
 
 void DisplayUI::_drawHomeScreen(SystemState& state) {
