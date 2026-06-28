@@ -48,12 +48,12 @@ void DisplayUI::_drawHeartbeat(SystemState& state) {
 }
 
 void DisplayUI::_drawCloudIcon(bool connected) {
-    const int16_t  X     = 118;
-    const int16_t  Y     = 1;
+    const int16_t  x     = 118;
+    const int16_t  y     = 1;
     uint16_t color  = connected ? TFT_GREEN : TFT_DARKGREY;
     _sprite.loadFont(FontAwesomesolid9006);
     _sprite.setTextColor(color, TFT_BLACK);
-    _sprite.drawString("\uf0c2", 117, 1);
+    _sprite.drawString("\uf0c2", x, y);
     _sprite.unloadFont();
 }
 
