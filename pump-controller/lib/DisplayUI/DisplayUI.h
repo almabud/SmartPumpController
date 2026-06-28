@@ -22,6 +22,7 @@ private:
 
     void _handleNavigation(ButtonEvent event);
     void _goTo(ScreenId screen);
+    const char* _getScreenTitle(ScreenId screen);
 
     // Home screen drawing
     void _drawHome(SystemState& state);
@@ -29,4 +30,5 @@ private:
     void _drawSignalBars(uint8_t level);
     uint8_t _rssiToBars(int8_t rssi, bool connected);
     void _drawHeartbeat(SystemState& state);
+    void _drawCloudIcon(bool connected);
 };

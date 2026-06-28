@@ -1,5 +1,6 @@
 #include "DisplayUI.h"
 #include <TFT_eSPI.h>
+#include "FontAwesomesolid9006.h"
 
 extern TFT_eSprite _sprite;
 
@@ -36,6 +37,7 @@ void DisplayUI::_drawHeartbeat(SystemState& state) {
     const int16_t  Y        = 7;     // vertically centered in 14px title bar
     const uint8_t  RADIUS   = 3;
     uint16_t color          = !state.tankStale ? TFT_GREEN : TFT_RED;
+    // Heartbeat blinks every second
     bool filled             = (state.uptimeSeconds % 2 == 0);
 
     if (filled) {
@@ -45,17 +47,26 @@ void DisplayUI::_drawHeartbeat(SystemState& state) {
     }
 }
 
+void DisplayUI::_drawCloudIcon(bool connected) {
+    const int16_t  X     = 118;
+    const int16_t  Y     = 1;
+    uint16_t color  = connected ? TFT_GREEN : TFT_DARKGREY;
+    _sprite.loadFont(FontAwesomesolid9006);
+    _sprite.setTextColor(color, TFT_BLACK);
+    _sprite.drawString("\uf0c2", 117, 1);
+    _sprite.unloadFont();
+}
+
 void DisplayUI::_drawTitleBar(SystemState& state) {
     _sprite.fillRect(0, 0, 160, 14, TFT_BLACK);
     _sprite.drawFastHLine(0, 13, 160, 0x2945);
     _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
     _sprite.setTextSize(1);
     _sprite.setCursor(4, 3);
-    _sprite.print("Pump Controller");
+    _sprite.print(_getScreenTitle(_currentScreen));
     _drawSignalBars(_rssiToBars(state.wifiRssi, state.wifiConnected));
-
-    // Heartbeat blinks every second
     _drawHeartbeat(state);
+    _drawCloudIcon(state.cloudConnected);
 }
 
 void DisplayUI::_drawHome(SystemState& state) {

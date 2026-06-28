@@ -41,3 +41,10 @@ void DisplayUI::_goTo(ScreenId screen) {
     _currentScreen = screen;
     _screenChanged = true;
 }
+
+const char* DisplayUI::_getScreenTitle(ScreenId screen) {
+    switch (screen) {
+        case ScreenId::HOME:            return nullptr;
+        default:                        return "";
+    }
+}
