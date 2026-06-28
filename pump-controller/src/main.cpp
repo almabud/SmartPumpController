@@ -1,16 +1,26 @@
 #include <Arduino.h>
+#include <SPI.h>
+#include "config.h"
+
 #include "SystemState.h"
 #include "DisplayUI.h"
 #include "InputManager.h"
 
+// ---- Central state -------------------------------------------------------
 SystemState  state;
+
+// ---- Module instances ----------------------------------------------------
 DisplayUI    displayUI;
 InputManager inputManager;
 
+// ---- Scheduler timestamps ------------------------------------------------
+uint32_t lastDisplayMs = 0;
+
+// -------------------------------------------------------------------------
 void setup() {
     Serial.begin(115200);
     delay(300);
-    Serial.println("=== pump-controller booting ===");
+    Serial.println("=== pump-controller v2 booting ===");
 
     inputManager.begin();
     displayUI.begin();
@@ -19,7 +29,14 @@ void setup() {
 }
 
 void loop() {
+    uint32_t now = millis();
+
+    // Every iteration — time sensitive
     inputManager.update(state);
-    displayUI.update(state, inputManager.lastEvent());
-    delay(100);
+
+    // Display refresh — 500ms cadence
+    if (now - lastDisplayMs >= INTERVAL_DISPLAY_MS) {
+        displayUI.update(state, inputManager.lastEvent());
+        lastDisplayMs = now;
+    }
 }
