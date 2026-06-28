@@ -28,4 +28,5 @@ private:
     void _drawTitleBar(SystemState& state);
     void _drawSignalBars(uint8_t level);
     uint8_t _rssiToBars(int8_t rssi, bool connected);
+    void _drawHeartbeat(SystemState& state);
 };

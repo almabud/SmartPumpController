@@ -14,7 +14,7 @@ uint8_t DisplayUI::_rssiToBars(int8_t rssi, bool connected) {
 }
 
 void DisplayUI::_drawSignalBars(uint8_t level){
-    const int16_t  X          = 137;
+    const int16_t  X          = 147;
     const int16_t  Y          = 1;
     const uint8_t  BAR_WIDTH  = 2;
     const uint8_t  BAR_GAP    = 1;
@@ -31,6 +31,20 @@ void DisplayUI::_drawSignalBars(uint8_t level){
     }
 }
 
+void DisplayUI::_drawHeartbeat(SystemState& state) {
+    const int16_t  X        = 139;   // just left of signal bars
+    const int16_t  Y        = 7;     // vertically centered in 14px title bar
+    const uint8_t  RADIUS   = 3;
+    uint16_t color          = !state.tankStale ? TFT_GREEN : TFT_RED;
+    bool filled             = (state.uptimeSeconds % 2 == 0);
+
+    if (filled) {
+        _sprite.fillCircle(X, Y, RADIUS, color);
+    } else {
+        _sprite.fillCircle(X, Y, RADIUS, TFT_BLACK);  // erase
+    }
+}
+
 void DisplayUI::_drawTitleBar(SystemState& state) {
     _sprite.fillRect(0, 0, 160, 14, TFT_BLACK);
     _sprite.drawFastHLine(0, 13, 160, 0x2945);
@@ -39,6 +53,9 @@ void DisplayUI::_drawTitleBar(SystemState& state) {
     _sprite.setCursor(4, 3);
     _sprite.print("Pump Controller");
     _drawSignalBars(_rssiToBars(state.wifiRssi, state.wifiConnected));
+
+    // Heartbeat blinks every second
+    _drawHeartbeat(state);
 }
 
 void DisplayUI::_drawHome(SystemState& state) {
