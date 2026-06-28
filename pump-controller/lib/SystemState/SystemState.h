@@ -98,6 +98,7 @@ public:
     // ---- Connectivity ----------------------------------------------------
     bool     wifiConnected    = false;  // true when Wi-Fi is connected
     bool     cloudConnected   = false;  // true when MQTT broker is connected
+    int8_t   wifiRssi         = 0;
 
     // ---- Mode / control --------------------------------------------------
     OperatingMode mode            = OperatingMode::AUTO;

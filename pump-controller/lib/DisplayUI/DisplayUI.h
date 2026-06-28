@@ -22,5 +22,10 @@ private:
 
     void _handleNavigation(ButtonEvent event);
     void _goTo(ScreenId screen);
+
+    // Home screen drawing
     void _drawHome(SystemState& state);
+    void _drawTitleBar(SystemState& state);
+    void _drawSignalBars(uint8_t level);
+    uint8_t _rssiToBars(int8_t rssi, bool connected);
 };

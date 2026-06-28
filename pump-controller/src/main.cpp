@@ -16,7 +16,8 @@ InputManager inputManager;
 // ---- Scheduler timestamps ------------------------------------------------
 uint32_t lastDisplayMs = 0;
 
-// -------------------------------------------------------------------------
+static uint32_t lastUptimeMs = 0;
+
 void setup() {
     Serial.begin(115200);
     delay(300);
@@ -38,5 +39,11 @@ void loop() {
     if (now - lastDisplayMs >= INTERVAL_DISPLAY_MS) {
         displayUI.update(state, inputManager.lastEvent());
         lastDisplayMs = now;
+    }
+
+    // Uptime counter — increment every second
+    if (now - lastUptimeMs >= 1000) {
+        state.uptimeSeconds++;
+        lastUptimeMs = now;
     }
 }
