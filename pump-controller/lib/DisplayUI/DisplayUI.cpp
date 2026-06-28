@@ -1,100 +1,94 @@
+// lib/DisplayUI/DisplayUI.cpp
 #include "DisplayUI.h"
+#include <Arduino.h>
+#include <TFT_eSPI.h>
 #include "config.h"
-#include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_ST7735.h>
 
-static SPIClass       spiDisplay(FSPI);
-static Adafruit_ST7735 tft(&spiDisplay, PIN_TFT_CS, PIN_TFT_DC, PIN_TFT_RST);
+// TFT driver and full-screen sprite
+// Sprite lives in PSRAM automatically on N16R8 — zero internal RAM cost
+TFT_eSPI    _tft;
+TFT_eSprite _sprite(&_tft);
 
 void DisplayUI::begin() {
+    // Backlight on via BC547 transistor
     pinMode(PIN_TFT_BL, OUTPUT);
-    digitalWrite(PIN_TFT_BL, HIGH);   // backlight on via BC547
+    digitalWrite(PIN_TFT_BL, HIGH);
 
-    spiDisplay.begin(PIN_TFT_SCLK, -1 /* no MISO */, PIN_TFT_MOSI, PIN_TFT_CS);
-    tft.initR(INITR_BLACKTAB);
-    tft.setRotation(0);
-    tft.fillScreen(ST77XX_BLACK);
+    // Init display
+    _tft.init();
+    _tft.setRotation(1);           // landscape — same as v1
+    _tft.fillScreen(TFT_BLACK);
 
-    // Boot splash
-    tft.setTextColor(ST77XX_WHITE);
-    tft.setTextSize(1);
-    tft.setCursor(5, 5);
-    tft.println("Pump Controller v2");
-    tft.setCursor(5, 20);
-    tft.setTextColor(ST77XX_GREEN);
-    tft.println("Booting...");
+    // Create full-screen sprite in PSRAM
+    // 160x128 x 2 bytes = 40KB — goes to PSRAM automatically
+    _sprite.setColorDepth(16);
+    _sprite.createSprite(160, 128);
+    _sprite.setSwapBytes(true);
 
-    Serial.println("[DisplayUI] begin");
+    // Boot splash — draw into sprite, push once
+    _sprite.fillSprite(TFT_BLACK);
+    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    _sprite.setTextSize(1);
+    _sprite.setCursor(5, 50);
+    _sprite.print("Pump Controller v2");
+    _sprite.setCursor(5, 65);
+    _sprite.setTextColor(TFT_GREEN, TFT_BLACK);
+    _sprite.print("Booting...");
+    _sprite.pushSprite(0, 0);
+
+    Serial.println("[DisplayUI] begin - TFT_eSPI + sprite ready");
 }
 
 void DisplayUI::update(SystemState& state, ButtonEvent event) {
-    if (!state.hasChanged(Consumer::DISPLAY_CONSUMER)) return;
-    _drawHomeScreen(state);
+    _handleNavigation(event);
+
+    if (!state.hasChanged(Consumer::DISPLAY_CONSUMER) && !_screenChanged)
+        return;
+
+    // Draw current screen into sprite
+    switch (_currentScreen) {
+        case ScreenId::HOME:    _drawHome(state);    break;
+        case ScreenId::MENU:    _drawMenu(state);    break;
+        default:                _drawHome(state);    break;
+    }
+
+    // Push entire frame to display — one SPI burst, zero flicker
+    _sprite.pushSprite(0, 0);
+
     state.markSeen(Consumer::DISPLAY_CONSUMER);
+    _screenChanged = false;
 }
 
-void DisplayUI::_drawHomeScreen(SystemState& state) {
-    tft.fillScreen(ST77XX_BLACK);
+void DisplayUI::_handleNavigation(ButtonEvent event) {
+    if (event == ButtonEvent::NONE) return;
 
-    // --- Row 1: tank level ---
-    tft.setTextColor(ST77XX_WHITE);
-    tft.setTextSize(1);
-    tft.setCursor(5, 5);
-    tft.print("Tank: ");
-    if (state.tankStale) {
-        tft.setTextColor(ST77XX_RED);
-        tft.print("-- STALE");
-    } else {
-        tft.setTextColor(ST77XX_CYAN);
-        tft.print(state.tankLevelPct);
-        tft.print("%");
+    switch (_currentScreen) {
+        case ScreenId::HOME:
+            if (event == ButtonEvent::SELECT_PRESS)
+                _goTo(ScreenId::MENU);
+            break;
+
+        case ScreenId::MENU:
+            if (event == ButtonEvent::UP_PRESS) {
+                if (_menuIndex > 0) _menuIndex--;
+            }
+            if (event == ButtonEvent::DOWN_PRESS) {
+                if (_menuIndex < 3) _menuIndex++;
+            }
+            if (event == ButtonEvent::BACK_PRESS ||
+                event == ButtonEvent::BACK_LONGPRESS)
+                _goTo(ScreenId::HOME);
+            break;
+
+        default:
+            if (event == ButtonEvent::BACK_PRESS ||
+                event == ButtonEvent::BACK_LONGPRESS)
+                _goTo(ScreenId::HOME);
+            break;
     }
+}
 
-    // --- Row 2: pump state + mode ---
-    tft.setTextColor(ST77XX_WHITE);
-    tft.setCursor(5, 20);
-    tft.print("Pump: ");
-    if (state.pumpState == PumpState::ON) {
-        tft.setTextColor(ST77XX_GREEN);
-        tft.print("ON ");
-    } else {
-        tft.setTextColor(ST77XX_RED);
-        tft.print("OFF");
-    }
-    tft.setTextColor(ST77XX_WHITE);
-    tft.print("  ");
-    tft.print(state.mode == OperatingMode::AUTO ? "AUTO" : "MAN ");
-
-    // --- Row 3: voltage + current ---
-    tft.setCursor(5, 35);
-    tft.print("V:");
-    tft.print(state.voltage, 1);
-    tft.print("  A:");
-    tft.print(state.current, 2);
-
-    // --- Row 4: power + energy ---
-    tft.setCursor(5, 50);
-    tft.print("W:");
-    tft.print(state.powerWatts, 1);
-    tft.print("  kWh:");
-    tft.print(state.energyKwh, 3);
-
-    // --- Row 5: connectivity ---
-    tft.setCursor(5, 65);
-    tft.print("WiFi:");
-    tft.setTextColor(state.wifiConnected ? ST77XX_GREEN : ST77XX_RED);
-    tft.print(state.wifiConnected ? "OK" : "NO");
-    tft.setTextColor(ST77XX_WHITE);
-    tft.print(" MQTT:");
-    tft.setTextColor(state.cloudConnected ? ST77XX_GREEN : ST77XX_RED);
-    tft.print(state.cloudConnected ? "OK" : "NO");
-
-    // --- Row 6: fault banner (only shown when there is a fault) ---
-    if (state.pumpFault || state.powerFault) {
-        tft.setTextColor(ST77XX_BLACK);
-        tft.fillRect(0, 80, 128, 14, ST77XX_RED);
-        tft.setCursor(5, 83);
-        tft.print("!! FAULT DETECTED !!");
-    }
+void DisplayUI::_goTo(ScreenId screen) {
+    _currentScreen = screen;
+    _screenChanged = true;
 }

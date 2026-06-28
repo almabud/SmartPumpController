@@ -6,15 +6,15 @@
 #include <SPI.h>
 #include "config.h"
 
-#include "../SystemState/SystemState.h"
-#include "../RadioReceiver/RadioReceiver.h"
-#include "../PowerMeter/PowerMeter.h"
-#include "../InputManager/InputManager.h"
-#include "../WifiManager/WifiManager.h"
-#include "../CloudClient/CloudClient.h"
-#include "../SceneEngine/SceneEngine.h"
-#include "../PumpDriver/PumpDriver.h"
-#include "../DisplayUI/DisplayUI.h"
+#include "SystemState.h"
+#include "RadioReceiver.h"
+#include "PowerMeter.h"
+#include "InputManager.h"
+#include "WifiManager.h"
+#include "CloudClient.h"
+#include "SceneEngine.h"
+#include "PumpDriver.h"
+#include "DisplayUI.h"
 
 // ---- Central state -------------------------------------------------------
 SystemState state;
