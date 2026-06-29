@@ -109,6 +109,33 @@ void DisplayUI::_drawTankLevel(SystemState& state) {
 }
 // ------------------------------------
 
+// --- Power switch drawings ---
+void DisplayUI::_drawPumpState(SystemState& state) {
+    const int8_t  X       = 60;
+    const int8_t  Y       = 33;
+    const int8_t radius   = 15;
+
+    _sprite.setTextFont(2);
+    _sprite.setTextSize(1);
+    _sprite.setCursor(X - 10, Y - 8);
+
+    if (state.pumpState == PumpState::ON) {
+        _sprite.fillCircle(X, Y, radius, TFT_GREEN);
+        _sprite.print("ON");
+    }else {
+        _sprite.fillCircle(X, Y, radius, TFT_RED);
+        _sprite.print("OFF");
+    }
+
+    // if (state.pumpState == PumpState::ON) {
+    //     _sprite.setTextColor(TFT_GREEN, TFT_BLACK);
+    //     _sprite.print("ON");
+    // } else {
+    //     _sprite.setTextColor(TFT_RED, TFT_BLACK);
+    //     _sprite.print("OFF");
+    // }
+}
+
 void DisplayUI::_drawHome(SystemState& state) {
     _sprite.fillSprite(TFT_BLACK);
 
@@ -116,6 +143,8 @@ void DisplayUI::_drawHome(SystemState& state) {
     _drawTitleBar(state);
     // --- Tank level ---
     _drawTankLevel(state);
+    // --- Pump state ---
+    _drawPumpState(state);
 
     // --- Pump state ---
     // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -167,6 +196,8 @@ void DisplayUI::_drawHome(SystemState& state) {
     // }
 
     // --- Uptime (bottom right) ---
+    _sprite.setTextFont(1);
+    _sprite.setTextSize(1);
     _sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
     _sprite.setCursor(100, 118);
     uint32_t h = state.uptimeSeconds / 3600;

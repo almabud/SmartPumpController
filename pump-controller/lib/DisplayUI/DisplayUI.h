@@ -34,4 +34,5 @@ private:
     void _drawCloudIcon(bool connected);
     // Tank level drawing
     void _drawTankLevel(SystemState& state);
+    void _drawPumpState(SystemState& state);
 };

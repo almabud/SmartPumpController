@@ -8,7 +8,7 @@ void DisplayUI::begin() {
     digitalWrite(TFT_BL, HIGH);
 
     _tft.init();
-    _tft.setRotation(1);
+    _tft.setRotation(-1);
     _tft.fillScreen(TFT_BLACK);
 
     _sprite.setColorDepth(16);
