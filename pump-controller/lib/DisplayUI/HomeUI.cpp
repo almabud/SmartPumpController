@@ -69,6 +69,7 @@ void DisplayUI::_drawTitleBar(SystemState& state) {
     _drawCloudIcon(state.cloudConnected);
 }
 // ------------------------------------
+
 // --- Water Tank Drawings ----
 void DisplayUI::_drawTankLevel(SystemState& state) {
     const uint8_t BAR_WIDTH     = 40;
@@ -106,6 +107,7 @@ void DisplayUI::_drawTankLevel(SystemState& state) {
     }
     _sprite.setTextFont(1);
 }
+// ------------------------------------
 
 void DisplayUI::_drawHome(SystemState& state) {
     _sprite.fillSprite(TFT_BLACK);
