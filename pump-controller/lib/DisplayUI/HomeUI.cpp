@@ -4,7 +4,7 @@
 
 extern TFT_eSprite _sprite;
 
-
+// --- Title bar drawing ---
 uint8_t DisplayUI::_rssiToBars(int8_t rssi, bool connected) {
     if (!connected) return 0;   // no signal
     if (rssi >= -50) return 4;  // excellent
@@ -68,93 +68,101 @@ void DisplayUI::_drawTitleBar(SystemState& state) {
     _drawHeartbeat(state);
     _drawCloudIcon(state.cloudConnected);
 }
+// ------------------------------------
+// --- Water Tank Drawings ----
+void DisplayUI::_drawTankLevel(SystemState& state) {
+    const uint8_t BAR_WIDTH     = 40;
+    const uint8_t BAR_HEIGHT    = 110;
+    const uint8_t BAR_X         = 2;
+    const uint8_t BAR_Y         = 16;
+    uint16_t barColor           = TFT_DARKGREY;
+    // Tank outline
+    _sprite.drawRect(BAR_X, BAR_Y, BAR_WIDTH, BAR_HEIGHT, TFT_DARKGREY);
+    // --- Tank level bar ---
+    if (!state.tankStale) {
+        uint16_t barHeight  = (state.tankLevelPct * BAR_HEIGHT) / 100;
+        barColor            = state.tankLevelPct > 50 ? TFT_BLUE : state.tankLevelPct > 20 ? TFT_YELLOW : TFT_RED;
+        _sprite.fillRect(
+            BAR_X + 1, 
+            BAR_Y + BAR_HEIGHT - barHeight, 
+            BAR_WIDTH - 2, 
+            barHeight, 
+            barColor
+        );
+    }
+    _sprite.setTextColor(TFT_WHITE);
+    _sprite.setTextFont(2);
+    _sprite.setTextSize(1);
+    if (state.tankLevelPct == 100) {
+        _sprite.setCursor(5, 64);
+    }else if (state.tankLevelPct >= 10) {
+        _sprite.setCursor(9, 64);
+    } else {
+        _sprite.setCursor(14, 64);
+    }
+    if (!state.tankStale) {
+        _sprite.print(state.tankLevelPct);
+        _sprite.print("%");
+    }
+    _sprite.setTextFont(1);
+}
 
 void DisplayUI::_drawHome(SystemState& state) {
     _sprite.fillSprite(TFT_BLACK);
 
     // --- Title bar ---
     _drawTitleBar(state);
+    // --- Tank level ---
+    _drawTankLevel(state);
 
     // --- Pump state ---
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.setCursor(4, 20);
-    _sprite.print("Pump: ");
-    if (state.pumpState == PumpState::ON) {
-        _sprite.setTextColor(TFT_GREEN, TFT_BLACK);
-        _sprite.print("ON");
-    } else {
-        _sprite.setTextColor(TFT_RED, TFT_BLACK);
-        _sprite.print("OFF");
-    }
+    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    // _sprite.setCursor(4, 20);
+    // _sprite.print("Pump: ");
+    // if (state.pumpState == PumpState::ON) {
+    //     _sprite.setTextColor(TFT_GREEN, TFT_BLACK);
+    //     _sprite.print("ON");
+    // } else {
+    //     _sprite.setTextColor(TFT_RED, TFT_BLACK);
+    //     _sprite.print("OFF");
+    // }
 
     // --- Mode ---
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.setCursor(90, 20);
-    _sprite.print("Mode: ");
-    _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    _sprite.print(state.mode == OperatingMode::AUTO ? "AUTO" : "MAN");
+    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    // _sprite.setCursor(90, 20);
+    // _sprite.print("Mode: ");
+    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
+    // _sprite.print(state.mode == OperatingMode::AUTO ? "AUTO" : "MAN");
 
-    // --- Tank level ---
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.setCursor(4, 35);
-    _sprite.print("Tank: ");
-    if (state.tankStale) {
-        _sprite.setTextColor(TFT_RED, TFT_BLACK);
-        _sprite.print("STALE");
-    } else {
-        _sprite.setTextColor(TFT_CYAN, TFT_BLACK);
-        _sprite.print(state.tankLevelPct);
-        _sprite.print("%");
-    }
-
-    // --- Tank level bar ---
-    _sprite.drawRect(4, 46, 152, 10, TFT_DARKGREY);
-    if (!state.tankStale) {
-        uint16_t barWidth = (state.tankLevelPct * 150) / 100;
-        uint16_t barColor = state.tankLevelPct > 50 ? TFT_GREEN :
-                            state.tankLevelPct > 20 ? TFT_YELLOW : TFT_RED;
-        _sprite.fillRect(5, 47, barWidth, 8, barColor);
-    }
 
     // --- Power readings ---
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.setCursor(4, 62);
-    _sprite.print("V:");
-    _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    _sprite.print(state.voltage, 1);
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.print("  A:");
-    _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    _sprite.print(state.current, 2);
+    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    // _sprite.setCursor(4, 62);
+    // _sprite.print("V:");
+    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
+    // _sprite.print(state.voltage, 1);
+    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    // _sprite.print("  A:");
+    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
+    // _sprite.print(state.current, 2);
 
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.setCursor(4, 75);
-    _sprite.print("W:");
-    _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    _sprite.print(state.powerWatts, 1);
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.print("  kWh:");
-    _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    _sprite.print(state.energyKwh, 3);
-
-    // --- Connectivity ---
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.setCursor(4, 90);
-    _sprite.print("WiFi:");
-    _sprite.setTextColor(state.wifiConnected ? TFT_GREEN : TFT_RED, TFT_BLACK);
-    _sprite.print(state.wifiConnected ? "OK" : "NO");
-    _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    _sprite.print("  MQTT:");
-    _sprite.setTextColor(state.cloudConnected ? TFT_GREEN : TFT_RED, TFT_BLACK);
-    _sprite.print(state.cloudConnected ? "OK" : "NO");
+    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    // _sprite.setCursor(4, 75);
+    // _sprite.print("W:");
+    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
+    // _sprite.print(state.powerWatts, 1);
+    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    // _sprite.print("  kWh:");
+    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
+    // _sprite.print(state.energyKwh, 3);
 
     // --- Fault banner ---
-    if (state.pumpFault || state.powerFault) {
-        _sprite.fillRect(0, 108, 160, 20, TFT_RED);
-        _sprite.setTextColor(TFT_WHITE, TFT_RED);
-        _sprite.setCursor(20, 114);
-        _sprite.print("!! FAULT DETECTED !!");
-    }
+    // if (state.pumpFault || state.powerFault) {
+    //     _sprite.fillRect(0, 108, 160, 20, TFT_RED);
+    //     _sprite.setTextColor(TFT_WHITE, TFT_RED);
+    //     _sprite.setCursor(20, 114);
+    //     _sprite.print("!! FAULT DETECTED !!");
+    // }
 
     // --- Uptime (bottom right) ---
     _sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);

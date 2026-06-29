@@ -83,9 +83,9 @@ class SystemState {
 public:
 
     // ---- Tank / radio ----------------------------------------------------
-    uint8_t  tankLevelPct     = 0;      // 0-100% tank fill level
+    uint8_t  tankLevelPct     = 60;      // 0-100% tank fill level
     uint32_t lastPacketTimeMs = 0;      // millis() timestamp of last valid radio packet
-    bool     tankStale        = true;   // true until first valid packet received
+    bool     tankStale        = false;   // true until first valid packet received
 
     // ---- Power monitoring ------------------------------------------------
     float    voltage          = 0.0f;   // mains voltage (V RMS)
