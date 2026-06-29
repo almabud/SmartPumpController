@@ -82,7 +82,7 @@ void DisplayUI::_drawTankLevel(SystemState& state) {
     // --- Tank level bar ---
     if (!state.tankStale) {
         uint16_t barHeight  = (state.tankLevelPct * BAR_HEIGHT) / 100;
-        barColor            = state.tankLevelPct > 50 ? TFT_BLUE : state.tankLevelPct > 20 ? TFT_YELLOW : TFT_RED;
+        barColor            = state.tankLevelPct > 50 ? TFT_BLUE : state.tankLevelPct > 20 ? TFT_ORANGE : TFT_RED;
         _sprite.fillRect(
             BAR_X + 1, 
             BAR_Y + BAR_HEIGHT - barHeight, 
@@ -94,13 +94,10 @@ void DisplayUI::_drawTankLevel(SystemState& state) {
     _sprite.setTextColor(TFT_WHITE);
     _sprite.setTextFont(2);
     _sprite.setTextSize(1);
-    if (state.tankLevelPct == 100) {
-        _sprite.setCursor(5, 64);
-    }else if (state.tankLevelPct >= 10) {
-        _sprite.setCursor(9, 64);
-    } else {
-        _sprite.setCursor(14, 64);
-    }
+    if (state.tankLevelPct == 100) _sprite.setCursor(5, 64);
+    else if (state.tankLevelPct >= 10) _sprite.setCursor(9, 64);
+    else _sprite.setCursor(14, 64);
+
     if (!state.tankStale) {
         _sprite.print(state.tankLevelPct);
         _sprite.print("%");
