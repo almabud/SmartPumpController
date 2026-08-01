@@ -11,5 +11,8 @@ public:
 private:
     uint32_t _lastOffTimeMs  = 0;   // timestamp when pump last turned OFF
     uint32_t _runStartTimeMs = 0;   // timestamp when pump last turned ON
-    // Phase 4: these are used to enforce PUMP_MIN_OFF_MS and PUMP_MAX_RUN_MS
+    // Phase 4: _runStartTimeMs is used to enforce PUMP_MAX_RUN_MS
+
+    // The single place where relay polarity is resolved.
+    void _writeRelay(bool on);
 };

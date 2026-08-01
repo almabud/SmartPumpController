@@ -55,6 +55,14 @@
 #define INTERVAL_WIFI_CHECK_MS 5000
 #define INTERVAL_CLOUD_MS      2000
 
+// ---------- Input timing ----------
+#define BUTTON_DEBOUNCE_MS       30
+#define BUTTON_LONG_PRESS_MS   1000   // hold SELECT this long to toggle the pump
+
+// ---------- Pump safety ----------
+#define RELAY_ACTIVE_LOW          1   // 1 = LOW energises the relay
+#define PUMP_MIN_OFF_MS       30000   // minimum OFF time before a restart is allowed
+
 // ---------- Boot screen ----------
 #define FIRMWARE_VERSION     "v2.0"
 #define BOOT_TOTAL_STEPS         3   // Display, Inputs, Ready — bump as modules land

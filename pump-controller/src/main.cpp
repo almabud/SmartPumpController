@@ -5,6 +5,8 @@
 #include "SystemState.h"
 #include "DisplayUI.h"
 #include "InputManager.h"
+#include "PumpDriver.h"
+#include "SceneEngine.h"
 
 // ---- Central state -------------------------------------------------------
 SystemState  state;
@@ -12,6 +14,8 @@ SystemState  state;
 // ---- Module instances ----------------------------------------------------
 DisplayUI    displayUI;
 InputManager inputManager;
+PumpDriver   pumpDriver;
+SceneEngine  sceneEngine;
 
 // ---- Scheduler timestamps ------------------------------------------------
 uint32_t lastDisplayMs = 0;
@@ -23,7 +27,11 @@ void setup() {
     delay(300);
     Serial.println("=== pump-controller v2 booting ===");
 
-    // Display comes up first — nothing can be shown before it.
+    // Relay first: GPIO18 floats until it is configured, and parking the pump
+    // OFF outranks the splash. Serial-only, so it is not a boot step.
+    pumpDriver.begin();
+
+    // Display comes up next — nothing can be shown before it.
     displayUI.begin();
     displayUI.showBoot(1, BOOT_TOTAL_STEPS, "Starting display...");
 
@@ -41,6 +49,8 @@ void loop() {
 
     // Every iteration — time sensitive
     inputManager.update(state);
+    sceneEngine.update(state);   // request  -> desired action
+    pumpDriver.update(state);    // desired action -> relay + pumpState
 
     // Display refresh — 500ms cadence
     if (now - lastDisplayMs >= INTERVAL_DISPLAY_MS) {
