@@ -1,7 +1,10 @@
 # Manual pump ON/OFF — long-press SELECT
 
-> Status: **implemented** — builds clean; relay polarity still needs the bench
-> click test (step 3 below).
+> Status: **implemented**. The relay polarity question in the verification
+> section below is **resolved** — the module turned out to be 5V-logic and
+> needs a BC547 driver, which inverts the pin. See
+> [relay-level-shift.md](relay-level-shift.md). `RELAY_ACTIVE_LOW` is now `0`,
+> so step 8 below no longer applies.
 
 ## Context
 

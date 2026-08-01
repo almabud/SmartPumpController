@@ -175,8 +175,108 @@ ACS712 OUT ──[2.1kΩ]──┬── GPIO4
 | Module Pin | Connects to | Notes |
 |------------|-------------|-------|
 | VCC | 5V (VIN) | Powers the relay coil |
-| GND | GND | |
-| IN | GPIO18 | Direct — module's transistor handles switching |
+| GND | GND | Must be common with the ESP32 |
+| IN | BC547 Collector | **Not** direct from GPIO18 — see driver circuit below |
+
+**Why a driver is needed:** the IN pin is **current-driven, not voltage-driven**.
+The relay energises whenever current can flow out of IN, so what matters is
+whether IN has a path to ground — not what voltage sits on it.
+
+Measured on this module:
+
+| IN pin | Reads | Relay |
+|--------|-------|-------|
+| Disconnected (open) | 0.6V | OFF |
+| Tied to GND | 0V | ON |
+| Driven by GPIO18 at 3.3V | 3.3V | **ON** — the bug |
+
+An ESP32 output at HIGH is a low-impedance sink, so it still passes enough
+current to hold the relay on. Counter-intuitively a floating pin turns it off
+while a 3.3V pin does not. IN never needs to reach 5V — it needs to be left
+**open**, which no directly-wired GPIO can ever do.
+
+This module has no VCC/JD-VCC jumper, so the split-rail fix is unavailable.
+
+**Relay driver circuit (BC547 NPN low-side switch — same as the backlight):**
+
+```
+5V ────────────────── Module VCC
+Module IN ─────────── BC547 Collector
+BC547 Emitter ─────── GND
+GPIO18 ──[3.3kΩ]────── BC547 Base
+BC547 Base ──[21.5kΩ]─ GND
+```
+
+BC547 pinout (flat side facing you, legs down): Left=C, Middle=B, Right=E
+
+```
+   ┌───────┐
+   │ BC547 │   ← flat side toward you
+   └┬──┬──┬┘
+    C  B  E
+```
+
+**Connections — remove the old GPIO18 → IN wire first:**
+
+| # | From | To |
+|---|------|-----|
+| 1 | BC547 **left leg** (C) | Relay module **IN** |
+| 2 | BC547 **right leg** (E) | **GND** |
+| 3 | BC547 **middle leg** (B) | **3.3kΩ** → **GPIO18** |
+| 4 | BC547 **middle leg** (B) | **21.5kΩ** → **GND** |
+| 5 | Relay **VCC** | **5V** |
+| 6 | Relay **GND** | **GND** — common with the ESP32 |
+
+Both resistors land on the middle leg: one up to GPIO18, one down to GND.
+
+Think of the transistor as a remote-controlled jumper wire between IN and GND,
+with GPIO18 as the switch:
+
+- GPIO18 **LOW** → no base current → C and E isolated → IN left open → relay OFF
+- GPIO18 **HIGH** → base current → C connects to E → IN pulled to GND → relay ON
+
+No pull-up on IN is needed. The transistor simply disconnects IN when open,
+which is the OFF condition — confirmed by hand with a jumper wire before
+building the circuit.
+
+**Why the 3.3kΩ (current limiting).** The base is a diode to the emitter: it
+clamps at ~0.7V and then stops resisting, taking whatever current is offered.
+Wired direct to a GPIO, that is a short in all but name:
+
+```
+(3.3V − 0.7V) / ~40Ω internal ≈ 65mA   vs. pin rated 20mA continuous, 40mA max
+```
+
+With the resistor: `(3.3 − 0.7) / 3300 = 0.79mA`. The relay input draws ~4mA and
+a BC547 has hFE 200-400, so it needs only ~0.02mA of base current — 0.79mA is
+roughly 40× that, driving it hard into saturation. This is **not** a 3.3V-
+specific requirement; at 5V the current would be higher and the resistor even
+more necessary. (A MOSFET such as the 2N7002 has an insulated, voltage-driven
+gate and needs no such resistor — that is a part-type difference, not a
+supply-voltage one.)
+
+**Why the 21.5kΩ (idle state).** It carries no working current. GPIO18 is Hi-Z
+from reset until `pinMode()` runs, and a floating base is a small antenna —
+stray coupling can lift it past 0.7V and partially switch the transistor on.
+Harmless flicker on the backlight; a spurious pump start here. The pull-down
+drains that to ground. It costs only `0.7V / 21.5kΩ = 0.033mA` of base drive,
+about 4%.
+
+Values are forgiving — the **ratio** matters more than the absolutes. Keep the
+pull-down roughly 5-10× the base resistor: strong enough to hold the base down
+while floating, weak enough not to rob drive when active. 3.3kΩ : 21.5kΩ is
+6.5×. Workable alternatives: 4.6kΩ + 46kΩ, or 1kΩ + 10kΩ.
+
+**Staged bench test — do this before connecting GPIO18:**
+
+1. Wire connections 1, 2, 4, 5 and 6. Leave the 3.3kΩ's far end loose.
+2. Power the relay module. Loose wire touching nothing → relay **off**.
+3. Touch the loose end to **3.3V** → relay clicks **on**.
+4. Pull it away → clicks **off**.
+5. If that works, plug that wire into GPIO18.
+
+If the relay behaves backwards, the transistor legs are mirrored — rotate it
+180° and retry, since the flat face is easy to read the wrong way round.
 
 **Mains side (screw terminals — wire last, mains disconnected):**
 
@@ -186,13 +286,21 @@ ACS712 OUT ──[2.1kΩ]──┬── GPIO4
 | Middle | 公共端 (COM) | Live wire FROM ACS712 IP- |
 | Right | 常闭 (NC) | Leave unconnected |
 
-**Logic:** verify active-HIGH or active-LOW before writing PumpDriver code:
-- Active LOW: GPIO18 LOW = relay ON, GPIO18 HIGH = relay OFF (most common)
-- Active HIGH: GPIO18 HIGH = relay ON, GPIO18 LOW = relay OFF
+**Logic — settled, do not re-derive.** The transistor inverts, so the module and
+the pin disagree. Both of these are true at once:
 
-**config.h pin:**
+- At the module: IN LOW = relay ON, IN HIGH = relay OFF (active-LOW)
+- At the pin: **GPIO18 HIGH = relay ON**, GPIO18 LOW = relay OFF
+
+```
+GPIO18 HIGH → base current → transistor conducts → IN at 0V → relay ON
+GPIO18 LOW  → no base current → transistor open   → IN at 5V → relay OFF
+```
+
+**config.h:**
 ```cpp
-#define PIN_PUMP_RELAY   18
+#define PIN_PUMP_RELAY     18
+#define RELAY_ACTIVE_LOW    0   // 0 = HIGH energises — the BC547 inverts
 ```
 
 ---

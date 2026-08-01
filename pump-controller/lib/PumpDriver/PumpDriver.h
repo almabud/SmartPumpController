@@ -5,7 +5,11 @@
 
 class PumpDriver {
 public:
+    // Parks the relay OFF. Call as the very first thing in setup(), before
+    // Serial — the relay is energised from reset until this runs.
     void begin();
+    // Diagnostics, split out so begin() need not wait for Serial to be up.
+    void logConfig();
     void update(SystemState& state);
 
 private:

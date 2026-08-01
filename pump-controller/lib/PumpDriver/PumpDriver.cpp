@@ -10,18 +10,21 @@ void PumpDriver::_writeRelay(bool on) {
 }
 
 void PumpDriver::begin() {
+    // GPIO18 is Hi-Z from reset until this runs. The BC547's base pull-down
+    // holds the transistor off through that window, so the relay is already
+    // open in hardware — driving the pin here just makes it explicit.
     pinMode(PIN_PUMP_RELAY, OUTPUT);
-
-    // Safe default: pump OFF at boot. If the relay audibly clicks here, the
-    // module is the opposite polarity — flip RELAY_ACTIVE_LOW in config.h.
     _writeRelay(false);
 
     // Without this seed the interlock in update() would block the first start
     // for PUMP_MIN_OFF_MS after every boot, since _lastOffTimeMs starts at 0.
     _lastOffTimeMs = millis() - PUMP_MIN_OFF_MS;
+}
 
-    Serial.printf("[PumpDriver] begin - pump OFF (relay active-%s)\n",
-                  RELAY_ACTIVE_LOW ? "LOW" : "HIGH");
+void PumpDriver::logConfig() {
+    Serial.printf("[PumpDriver] pump OFF (relay active-%s, min off %lus)\n",
+                  RELAY_ACTIVE_LOW ? "LOW" : "HIGH",
+                  (unsigned long)(PUMP_MIN_OFF_MS / 1000));
 }
 
 void PumpDriver::update(SystemState& state) {

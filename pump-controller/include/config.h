@@ -60,7 +60,11 @@
 #define BUTTON_LONG_PRESS_MS   1000   // hold SELECT this long to toggle the pump
 
 // ---------- Pump safety ----------
-#define RELAY_ACTIVE_LOW          1   // 1 = LOW energises the relay
+// The relay module is 5V-logic: a 3.3V IN reads as LOW, so the pin alone can
+// never release it. GPIO18 drives a BC547 low-side switch instead, which
+// inverts — so HIGH at the pin energises the relay, even though the module
+// itself is active-LOW at its IN terminal. See docs/wiringe_guide.md section 6.
+#define RELAY_ACTIVE_LOW          0   // 0 = HIGH energises the relay
 #define PUMP_MIN_OFF_MS       30000   // minimum OFF time before a restart is allowed
 
 // ---------- Boot screen ----------

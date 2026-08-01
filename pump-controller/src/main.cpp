@@ -23,13 +23,15 @@ uint32_t lastDisplayMs = 0;
 static uint32_t lastUptimeMs = 0;
 
 void setup() {
+    // Park the relay output before anything else. The BC547 base pull-down
+    // already holds it off through reset, so this is defensive ordering
+    // rather than a race being closed.
+    pumpDriver.begin();
+
     Serial.begin(115200);
     delay(300);
     Serial.println("=== pump-controller v2 booting ===");
-
-    // Relay first: GPIO18 floats until it is configured, and parking the pump
-    // OFF outranks the splash. Serial-only, so it is not a boot step.
-    pumpDriver.begin();
+    pumpDriver.logConfig();
 
     // Display comes up next — nothing can be shown before it.
     displayUI.begin();
