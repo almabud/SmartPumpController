@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pio run)",
+      "Bash(pio run -e:*)",
+      "Bash(pio run -t compiledb)",
+      "Bash(pio run -t clean)",
+      "Bash(pio device list)",
+      "Bash(pio lib list)",
+      "Bash(pio test:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)"
+    ],
+    "ask": [
+      "Bash(pio run -t upload:*)",
+      "Bash(pio run -t erase:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": []
+  }
+}
