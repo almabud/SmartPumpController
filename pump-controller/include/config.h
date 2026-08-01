@@ -67,6 +67,10 @@
 #define RELAY_ACTIVE_LOW          0   // 0 = HIGH energises the relay
 #define PUMP_MIN_OFF_MS       30000   // minimum OFF time before a restart is allowed
 
+// ---------- Pump timer ----------
+#define TIMER_MINUTE_STEP         1   // minutes per UP/DOWN press (0..59)
+#define TIMER_MAX_HOURS          23   // hour field wraps 0..23
+
 // ---------- Boot screen ----------
 #define FIRMWARE_VERSION     "v2.0"
 #define BOOT_TOTAL_STEPS         3   // Display, Inputs, Ready — bump as modules land

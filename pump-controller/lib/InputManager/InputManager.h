@@ -17,7 +17,17 @@ class InputManager {
 public:
     void begin();
     void update(SystemState& state);
+
+    // Non-destructive peek.
     ButtonEvent lastEvent() const { return _lastEvent; }
+
+    // Returns the pending event and clears it. Events are latched until taken,
+    // so a press is never lost between two update() calls.
+    ButtonEvent takeEvent() {
+        ButtonEvent e = _lastEvent;
+        _lastEvent    = ButtonEvent::NONE;
+        return e;
+    }
 
 private:
     // Index into the pin table in the .cpp — order must match.

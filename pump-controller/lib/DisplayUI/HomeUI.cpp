@@ -151,29 +151,117 @@ void DisplayUI::_drawPumpState(SystemState& state) {
     }
 }
 
-void DisplayUI::_drawPumpTimer(SystemState& state) {
-    const int8_t  X       = 80;
-    const int8_t  Y       = 15;
+int16_t DisplayUI::_drawTimerNum(int16_t x, int16_t y, uint8_t value,
+                                 TimerField field, const char* label, bool placeholder) {
+    char buf[4];
+    if (placeholder) snprintf(buf, sizeof(buf), "%s", label);
+    else             snprintf(buf, sizeof(buf), "%02u", value);
 
-    _sprite.drawRect(X, Y, 80, 35, TFT_DARKGREY);
-    // Draw the timer text
-    _sprite.setTextColor(TFT_WHITE);
-    _sprite.setCursor(X + 2, Y + 7);
-    _sprite.setTextFont(1);
-    _sprite.setTextSize(1);
-    // _sprite.print("TIMER:");
-    _sprite.setCursor(X + 23, Y + 2);
+    bool focused = (_timerField == field);
+    // The focused field is the one that blinks; the rest stay solid so only the
+    // cursor moves visually.
+    if (!focused || _timerBlinkOn) {
+        uint16_t color = focused     ? TFT_YELLOW
+                       : placeholder ? TFT_DARKGREY   // reads as "not set yet"
+                                     : TFT_WHITE;
+        _sprite.setTextColor(color, TFT_BLACK);
+        _sprite.setCursor(x, y);
+        _sprite.print(buf);
+    }
+    return x + _sprite.textWidth(buf);
+}
+
+int16_t DisplayUI::_drawTimerText(int16_t x, int16_t y, const char* text, uint16_t color) {
+    _sprite.setTextColor(color, TFT_BLACK);
+    _sprite.setCursor(x, y);
+    _sprite.print(text);
+    return x + _sprite.textWidth(text);
+}
+
+void DisplayUI::_drawPumpTimer(SystemState& state) {
+    const int8_t X     = 80;
+    const int8_t Y     = 15;
+    const int8_t WIDTH = 80;
+
+    const bool editing  = _editing();
+    const bool running  = (state.timerPhase != TimerPhase::IDLE);
+    const bool breaking = (state.timerPhase == TimerPhase::BREAKING);
+
+    // A yellow border is the cue that the box has the buttons.
+    _sprite.drawRect(X, Y, WIDTH, 35, editing ? TFT_YELLOW : TFT_DARKGREY);
+
+    // --- Row 1: the whole run window ---
+    // A running window also shows seconds, so the row is measured and centred
+    // rather than started at a fixed x — HH:MM:SS would not fit otherwise.
     _sprite.setTextFont(2);
     _sprite.setTextSize(1);
-    _sprite.print("HH:MM");
-    
-    // Draw Interval
+
+    // Labels only stand in while the whole row is untouched; the moment one
+    // field is set the others read as the 00 they will commit as.
+    const bool row1Labels = _row1Untouched();
+    const bool row2Labels = _row2Untouched();
+
+    char hh[4], mm[4], row1[12];
+    if (editing) {
+        snprintf(hh, sizeof(hh), row1Labels ? "HH" : "%02u", _editTotalH);
+        snprintf(mm, sizeof(mm), row1Labels ? "MM" : "%02u", _editTotalM);
+        snprintf(row1, sizeof(row1), "%s:%s", hh, mm);
+    } else if (running) {
+        // The run budget is parked during a break, so a frozen number would
+        // read as a hang — show the break counting down instead, in orange.
+        uint32_t shown = breaking ? state.timerPhaseSec : state.timerRemainSec;
+        snprintf(row1, sizeof(row1), "%02lu:%02lu:%02lu",
+                 (unsigned long)(shown / 3600),
+                 (unsigned long)((shown % 3600) / 60),
+                 (unsigned long)(shown % 60));
+    } else {
+        snprintf(row1, sizeof(row1), "HH:MM");
+    }
+
+    int16_t x = X + (WIDTH - _sprite.textWidth(row1)) / 2;
+    int16_t y = Y + 2;
+
+    if (editing) {
+        x = _drawTimerNum(x, y, _editTotalH, TimerField::TOTAL_HH, "HH", row1Labels);
+        x = _drawTimerText(x, y, ":", TFT_WHITE);
+        x = _drawTimerNum(x, y, _editTotalM, TimerField::TOTAL_MM, "MM", row1Labels);
+    } else {
+        _drawTimerText(x, y, row1, !running  ? TFT_DARKGREY
+                                  : breaking ? TFT_ORANGE
+                                             : TFT_WHITE);
+    }
+
+    // --- Row 2: the RUN-BREAK duty cycle ---
     _sprite.setTextFont(1);
     _sprite.setTextSize(1);
-    _sprite.setCursor(X + 7, Y + 22);
-    // _sprite.print("INT:");
-    // _sprite.setCursor(X + 30, Y + 20);
-    _sprite.print("HH:MM-HH:MM");
+    x = X + 7;
+    y = Y + 22;
+
+    // Shown dim and unfilled unless a duty cycle actually exists, so a timer
+    // committed straight from row 1 still reads as "runs continuously".
+    bool haveDuty = editing ? _useDutyCycle
+                            : (running && state.timerBreakSec > 0 && state.timerRunSec > 0);
+    if (!haveDuty) {
+        _drawTimerText(x, y, "HH:MM-HH:MM", TFT_DARKGREY);
+        return;
+    }
+
+    // Left pair is the break, right pair is the run it follows.
+    uint8_t brkH = _editBrkH, brkM = _editBrkM, runH = _editRunH, runM = _editRunM;
+    bool    labels = row2Labels;
+    if (!editing) {
+        brkH = state.timerBreakSec / 3600;  brkM = (state.timerBreakSec % 3600) / 60;
+        runH = state.timerRunSec   / 3600;  runM = (state.timerRunSec   % 3600) / 60;
+        labels = false;
+    }
+
+    x = _drawTimerNum(x, y, brkH, TimerField::BRK_HH, "HH", labels);
+    x = _drawTimerText(x, y, ":", TFT_WHITE);
+    x = _drawTimerNum(x, y, brkM, TimerField::BRK_MM, "MM", labels);
+    x = _drawTimerText(x, y, "-", TFT_WHITE);
+    x = _drawTimerNum(x, y, runH, TimerField::RUN_HH, "HH", labels);
+    x = _drawTimerText(x, y, ":", TFT_WHITE);
+    x = _drawTimerNum(x, y, runM, TimerField::RUN_MM, "MM", labels);
 }
 
 void DisplayUI::_drawHome(SystemState& state) {

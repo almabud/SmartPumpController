@@ -20,6 +20,8 @@ bool SystemState::hasChanged(Consumer consumer) const {
         cloudConnected  != s.cloudConnected  ||
         activeSceneId   != s.activeSceneId   ||
         uptimeSeconds   != s.uptimeSeconds   ||
+        timerPhase      != s.timerPhase      ||
+        timerRemainSec  != s.timerRemainSec  ||
         floatChanged(tankTempC,   s.tankTempC)   ||
         floatChanged(voltage,     s.voltage)     ||
         floatChanged(current,     s.current)     ||
@@ -47,6 +49,8 @@ bool SystemState::hasChanged(Consumer consumer, Field field) const {
         case Field::CLOUD_CONNECTED:return cloudConnected != s.cloudConnected;
         case Field::ACTIVE_SCENE:   return activeSceneId  != s.activeSceneId;
         case Field::UPTIME:         return uptimeSeconds  != s.uptimeSeconds;
+        case Field::PUMP_TIMER:     return timerPhase     != s.timerPhase
+                                        || timerRemainSec != s.timerRemainSec;
         default:                    return false;
     }
 }
@@ -69,4 +73,6 @@ void SystemState::markSeen(Consumer consumer) {
     s.cloudConnected = cloudConnected;
     s.activeSceneId  = activeSceneId;
     s.uptimeSeconds  = uptimeSeconds;
+    s.timerPhase     = timerPhase;
+    s.timerRemainSec = timerRemainSec;
 }

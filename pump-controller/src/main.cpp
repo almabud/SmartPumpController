@@ -6,6 +6,7 @@
 #include "DisplayUI.h"
 #include "InputManager.h"
 #include "PumpDriver.h"
+#include "PumpTimer.h"
 #include "SceneEngine.h"
 
 // ---- Central state -------------------------------------------------------
@@ -15,6 +16,7 @@ SystemState  state;
 DisplayUI    displayUI;
 InputManager inputManager;
 PumpDriver   pumpDriver;
+PumpTimer    pumpTimer;
 SceneEngine  sceneEngine;
 
 // ---- Scheduler timestamps ------------------------------------------------
@@ -51,12 +53,18 @@ void loop() {
 
     // Every iteration — time sensitive
     inputManager.update(state);
+    pumpTimer.update(state);     // countdown -> request
     sceneEngine.update(state);   // request  -> desired action
     pumpDriver.update(state);    // desired action -> relay + pumpState
 
-    // Display refresh — 500ms cadence
-    if (now - lastDisplayMs >= INTERVAL_DISPLAY_MS) {
-        displayUI.update(state, inputManager.lastEvent());
+    // Button events drive the display directly so a press is never waiting out
+    // the refresh interval; the interval only covers idle repaints.
+    ButtonEvent event = inputManager.takeEvent();
+    if (event != ButtonEvent::NONE) {
+        displayUI.update(state, event);
+        lastDisplayMs = now;
+    } else if (now - lastDisplayMs >= INTERVAL_DISPLAY_MS) {
+        displayUI.update(state, ButtonEvent::NONE);
         lastDisplayMs = now;
     }
 

@@ -20,6 +20,18 @@ enum class ActionRequest : uint8_t {
     TURN_OFF
 };
 
+enum class TimerRequest : uint8_t {
+    NONE,
+    START,      // arm the timer with the timerTotalSec/RunSec/BreakSec below
+    CANCEL      // stop the timer and the pump with it
+};
+
+enum class TimerPhase : uint8_t {
+    IDLE,       // no timer armed
+    RUNNING,    // inside a RUN slice — pump should be on
+    BREAKING    // inside a BREAK slice — pump should be off
+};
+
 // ---- Change detection consumers ------------------------------------------
 // Each consumer tracks its own "last seen" snapshot independently.
 // DisplayUI and CloudClient never interfere with each other's change detection.
@@ -49,7 +61,8 @@ enum class Field : uint8_t {
     WIFI_CONNECTED,
     CLOUD_CONNECTED,
     ACTIVE_SCENE,
-    UPTIME
+    UPTIME,
+    PUMP_TIMER
 };
 
 // ---- Snapshot struct (previous state per consumer) -----------------------
@@ -73,6 +86,8 @@ struct StateSnapshot {
     bool          cloudConnected  = false;
     uint8_t       activeSceneId   = 255;
     uint32_t      uptimeSeconds   = 0;
+    TimerPhase    timerPhase      = TimerPhase::IDLE;
+    uint32_t      timerRemainSec  = 0;
 };
 
 // ---- SystemState ---------------------------------------------------------
@@ -111,6 +126,27 @@ public:
     // Written by InputManager (local button) or CloudClient (remote app).
     // SceneEngine consumes and clears each cycle.
     ActionRequest pumpRequest     = ActionRequest::NONE;
+
+    // ---- Pump timer ------------------------------------------------------
+    // Written by DisplayUI (the edit UI) and InputManager (cancel on long press),
+    // consumed by PumpTimer.
+    // The duty cycle is a run slice followed by a break slice, repeating until
+    // the window runs out — the last one is simply cut short, the cycle does
+    // not have to divide the window. Both zero means run straight through.
+    TimerRequest timerRequest   = TimerRequest::NONE;
+    uint32_t     timerTotalSec  = 0;    // total window, 0 = nothing armed
+    uint32_t     timerBreakSec  = 0;    // how long the pump breaks for
+    uint32_t     timerRunSec    = 0;    // how long it runs between breaks
+
+    // Written by DisplayUI, read by InputManager: while the timer is being
+    // edited the buttons belong to the edit UI, so a long press must not reach
+    // through to the pump or a running timer.
+    bool         uiEditing      = false;
+
+    // Written by PumpTimer, read by DisplayUI.
+    TimerPhase   timerPhase     = TimerPhase::IDLE;
+    uint32_t     timerRemainSec = 0;    // seconds left in the whole window
+    uint32_t     timerPhaseSec  = 0;    // seconds left in the current slice
 
     // ---- Scene engine output (read by PumpDriver) ------------------------
     ActionRequest desiredPumpAction = ActionRequest::NONE;

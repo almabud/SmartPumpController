@@ -27,7 +27,9 @@ void InputManager::begin() {
 }
 
 void InputManager::update(SystemState& state) {
-    _lastEvent    = ButtonEvent::NONE;
+    // _lastEvent is NOT cleared here — it is latched until takeEvent() collects
+    // it. Clearing per call would drop nearly every press, since the consumer
+    // only polls on its own (much slower) cadence.
     uint32_t now  = millis();
 
     // Buttons are INPUT_PULLUP, so pressed reads LOW.
@@ -63,15 +65,25 @@ void InputManager::update(SystemState& state) {
             if (i == BTN_SELECT) {
                 _lastEvent = ButtonEvent::SELECT_LONG_PRESS;
 
-                // Manual pump override. SceneEngine consumes the request;
-                // MANUAL keeps Phase 4's AUTO logic from undoing it.
-                state.pumpRequest = (state.pumpState == PumpState::ON)
-                                  ? ActionRequest::TURN_OFF
-                                  : ActionRequest::TURN_ON;
-                state.mode = OperatingMode::MANUAL;
+                if (state.uiEditing) {
+                    // The edit UI owns the buttons — it uses the long press to
+                    // back out, and must not disturb whatever is running.
+                } else if (state.timerPhase != TimerPhase::IDLE) {
+                    // A running timer owns the pump, so the override is to end
+                    // the timer — PumpTimer turns the pump off as it clears.
+                    state.timerRequest = TimerRequest::CANCEL;
+                    Serial.println("[InputManager] SELECT long press - timer cancelled");
+                } else {
+                    // Manual pump override. SceneEngine consumes the request;
+                    // MANUAL keeps Phase 4's AUTO logic from undoing it.
+                    state.pumpRequest = (state.pumpState == PumpState::ON)
+                                      ? ActionRequest::TURN_OFF
+                                      : ActionRequest::TURN_ON;
+                    state.mode = OperatingMode::MANUAL;
 
-                Serial.printf("[InputManager] SELECT long press - pump %s requested\n",
-                              state.pumpRequest == ActionRequest::TURN_ON ? "ON" : "OFF");
+                    Serial.printf("[InputManager] SELECT long press - pump %s requested\n",
+                                  state.pumpRequest == ActionRequest::TURN_ON ? "ON" : "OFF");
+                }
             }
         }
     }

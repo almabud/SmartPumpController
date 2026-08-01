@@ -133,12 +133,21 @@ void SceneEngine::update(SystemState& state) {
 
 ## Known issue this does not fix
 
+> **Resolved** by [pump-timer.md](pump-timer.md): events are now latched until
+> `InputManager::takeEvent()` collects them, and the display redraws on the
+> event rather than waiting for the tick.
+
 `main.cpp` calls `inputManager.update()` every iteration but reads
 `inputManager.lastEvent()` only inside the 500 ms display block, so
 `ButtonEvent`s are overwritten and lost before `DisplayUI` ever sees them. It
 does not affect this feature — the pump path writes `state.pumpRequest`
 directly rather than travelling as an event — but menu navigation will need
 consume-on-read semantics. Flagging, not fixing.
+
+One behaviour from this plan has since changed: a long-press no longer always
+toggles the pump. While a timer is running it cancels the timer, and while the
+timer edit UI is open (`state.uiEditing`) it backs out of the edit and leaves
+the pump alone.
 
 ## Verification
 
