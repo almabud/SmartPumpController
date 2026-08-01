@@ -60,26 +60,28 @@ BC547 pinout (flat side facing you, legs down): Left=C, Middle=B, Right=E
 
 ---
 
-## 2. Push Buttons (×4, active-low)
+## 2. Push Buttons (×5, active-low)
 
 No external resistors needed — uses ESP32 internal INPUT_PULLUP.
 Wire one leg to GPIO, other leg to GND. No polarity.
 
 | Button | GPIO | Role |
 |--------|------|------|
-| Button 1 | GPIO11 | UP |
-| Button 2 | GPIO12 | DOWN |
-| Button 3 | GPIO13 | SELECT |
-| Button 4 | GPIO14 | BACK / long-press = home screen |
+| Button 1 | GPIO11 | LEFT |
+| Button 2 | GPIO12 | UP |
+| Button 3 | GPIO13 | SELECT / OK (confirm) |
+| Button 4 | GPIO14 | RIGHT |
+| Button 5 | GPIO6 | DOWN |
 
 **Logic:** pressed = LOW, released = HIGH (active-low).
 
 **config.h pins:**
 ```cpp
-#define PIN_BTN_UP      11
-#define PIN_BTN_DOWN    12
+#define PIN_BTN_LEFT    11
+#define PIN_BTN_UP      12
 #define PIN_BTN_SELECT  13
-#define PIN_BTN_BACK    14
+#define PIN_BTN_RIGHT   14
+#define PIN_BTN_DOWN     6
 ```
 
 ---
@@ -269,15 +271,15 @@ Wall socket
 | 2 | Reserved | RFM69 MISO (future) |
 | 4 | Active | ACS712 OUT (via divider) |
 | 5 | Active | ZMPT101B OUT |
-| 6 | Spare | ADC1 spare |
+| 6 | Active | Button DOWN |
 | 7 | Spare | ADC1 spare |
 | 8 | Reserved | I2C SDA |
 | 9 | Reserved | I2C SCL |
 | 10 | Reserved | Solenoid |
-| 11 | Active | Button UP |
-| 12 | Active | Button DOWN |
-| 13 | Active | Button SELECT |
-| 14 | Active | Button BACK |
+| 11 | Active | Button LEFT |
+| 12 | Active | Button UP |
+| 13 | Active | Button SELECT / OK |
+| 14 | Active | Button RIGHT |
 | 15 | Reserved | RFM69 CS (future) |
 | 16 | Active | ASK RX data (→ RFM69 RST after upgrade) |
 | 17 | Reserved | RFM69 IRQ (future) |

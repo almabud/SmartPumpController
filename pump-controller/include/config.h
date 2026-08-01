@@ -6,10 +6,11 @@
 #define PIN_CURRENT_SENSE   5    // ACS712-30A (via 10k/20k divider!)
 
 // ---------- Buttons (touch-capable; active-low push buttons) ----------
-#define PIN_BTN_UP          11
-#define PIN_BTN_DOWN        12
-#define PIN_BTN_SELECT      13
-#define PIN_BTN_BACK        14
+#define PIN_BTN_LEFT        11
+#define PIN_BTN_UP          12
+#define PIN_BTN_SELECT      13    // OK / confirm
+#define PIN_BTN_RIGHT       14
+#define PIN_BTN_DOWN         6
 
 // ---------- Display bus: SPI2 / FSPI (dedicated, active) ----------
 #define PIN_TFT_SCLK       40
@@ -39,7 +40,7 @@
 #define PIN_I2C_SCL         9
 
 // ---------- Spare / expansion ----------
-// Analog spares (ADC1): GPIO6, GPIO7
+// Analog spares (ADC1): GPIO7
 // 3rd SPI device: joins HSPI radio bus + 1 CS pin (GPIO6/7, or GPIO48 if free)
 // GPIO48: verify onboard RGB; free it if present
 

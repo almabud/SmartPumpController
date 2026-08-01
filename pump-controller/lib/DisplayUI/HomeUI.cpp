@@ -123,14 +123,31 @@ void DisplayUI::_drawPumpState(SystemState& state) {
         _sprite.fillCircle(X, Y, radius, TFT_RED);
         _sprite.print("OFF");
     }
+}
 
-    // if (state.pumpState == PumpState::ON) {
-    //     _sprite.setTextColor(TFT_GREEN, TFT_BLACK);
-    //     _sprite.print("ON");
-    // } else {
-    //     _sprite.setTextColor(TFT_RED, TFT_BLACK);
-    //     _sprite.print("OFF");
-    // }
+void DisplayUI::_drawPumpTimer(SystemState& state) {
+    const int8_t  X       = 80;
+    const int8_t  Y       = 15;
+
+    _sprite.drawRect(X, Y, 80, 35, TFT_DARKGREY);
+    // Draw the timer text
+    _sprite.setTextColor(TFT_WHITE);
+    _sprite.setCursor(X + 2, Y + 7);
+    _sprite.setTextFont(1);
+    _sprite.setTextSize(1);
+    // _sprite.print("TIMER:");
+    _sprite.setCursor(X + 23, Y + 2);
+    _sprite.setTextFont(2);
+    _sprite.setTextSize(1);
+    _sprite.print("HH:MM");
+    
+    // Draw Interval
+    _sprite.setTextFont(1);
+    _sprite.setTextSize(1);
+    _sprite.setCursor(X + 7, Y + 22);
+    // _sprite.print("INT:");
+    // _sprite.setCursor(X + 30, Y + 20);
+    _sprite.print("HH:MM-HH:MM");
 }
 
 void DisplayUI::_drawHome(SystemState& state) {
@@ -142,6 +159,8 @@ void DisplayUI::_drawHome(SystemState& state) {
     _drawTankLevel(state);
     // --- Pump state ---
     _drawPumpState(state);
+    // --- Pump timer ---
+    _drawPumpTimer(state);
 
     // --- Pump state ---
     // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);

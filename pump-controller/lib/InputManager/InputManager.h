@@ -5,11 +5,11 @@
 
 enum class ButtonEvent : uint8_t {
     NONE,
+    LEFT_PRESS,
+    RIGHT_PRESS,
     UP_PRESS,
     DOWN_PRESS,
-    SELECT_PRESS,
-    BACK_PRESS,
-    BACK_LONGPRESS   // long-press BACK = return to home screen from anywhere
+    SELECT_PRESS     // OK / confirm
 };
 
 class InputManager {
