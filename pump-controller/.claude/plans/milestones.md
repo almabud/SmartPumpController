@@ -16,7 +16,7 @@ Adafruit test suite with the actual non-blocking scheduler and module stubs.
 - All module stubs with empty `.cpp` files that compile cleanly
 - `DisplayUI` shows a live home screen reading from `SystemState`
 - `PumpDriver` initializes relay GPIO to safe OFF state
-- `InputManager` configures all 4 button pins with `INPUT_PULLUP`
+- `InputManager` configures all 5 button pins with `INPUT_PULLUP`
 
 **Checkpoint — phase is done when:**
 - `pio run` compiles with zero errors
@@ -28,11 +28,11 @@ Adafruit test suite with the actual non-blocking scheduler and module stubs.
 
 ## Phase 2 — Local inputs
 
-**Goal:** the 4 buttons drive the display menu. A user can navigate screens without
+**Goal:** the 5 buttons drive the display menu. A user can navigate screens without
 any sensor data or network connectivity.
 
 **Deliverables:**
-- `InputManager` — debounce (30ms), short press events, long-press detection (800ms)
+- `InputManager` — debounce (30ms), short press events, long-press detection (1000ms)
 - `DisplayUI` — full menu/screen state machine:
   - Home screen (status at a glance)
   - Manual control screen (pump ON/OFF override)
@@ -40,9 +40,12 @@ any sensor data or network connectivity.
   - About screen (firmware version, uptime)
 - Long-press BACK from any screen = return to home screen instantly
 - Button press gives visual feedback on display (highlight / invert)
+- Pump timer on the home screen — a pump-on run budget plus an optional
+  BREAK/RUN cycle, edited with the pad and driven by `PumpTimer`
+  (see [pump-timer.md](pump-timer.md))
 
 **Checkpoint — phase is done when:**
-- All 4 buttons register correctly in serial monitor
+- All 5 buttons register correctly in serial monitor
 - Navigation between all screens works without crashes
 - Long-press BACK reliably returns to home from any depth
 - Manual pump override request is written to `SystemState` (relay not yet wired to
@@ -185,7 +188,7 @@ editor is usable, fault handling is robust, and the first house deployment happe
 | Phase | Focus | Key checkpoint |
 |-------|-------|----------------|
 | 1 | Skeleton | Boots, display shows home screen |
-| 2 | Local inputs | 4 buttons navigate full menu |
+| 2 | Local inputs | 5 buttons navigate full menu |
 | 3 | Sensor data | Live tank level on display, STALE works |
 | 4 | Power + pump | Pump runs in AUTO, safety rules enforced |
 | 5 | Connectivity | App sees live data, remote commands work |
