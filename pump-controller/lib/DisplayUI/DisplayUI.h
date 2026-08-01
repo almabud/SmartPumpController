@@ -34,6 +34,8 @@ private:
     void _drawCloudIcon(bool connected);
     // Tank level drawing
     void _drawTankLevel(SystemState& state);
+    // Tank temperature drawing
+    void _drawTankTemp(SystemState& state);
     // Pump state drawing
     void _drawPumpState(SystemState& state);
     // Timer drawing

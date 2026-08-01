@@ -20,6 +20,7 @@ bool SystemState::hasChanged(Consumer consumer) const {
         cloudConnected  != s.cloudConnected  ||
         activeSceneId   != s.activeSceneId   ||
         uptimeSeconds   != s.uptimeSeconds   ||
+        floatChanged(tankTempC,   s.tankTempC)   ||
         floatChanged(voltage,     s.voltage)     ||
         floatChanged(current,     s.current)     ||
         floatChanged(powerWatts,  s.powerWatts)  ||
@@ -32,6 +33,7 @@ bool SystemState::hasChanged(Consumer consumer, Field field) const {
     switch (field) {
         case Field::TANK_LEVEL:     return tankLevelPct   != s.tankLevelPct;
         case Field::TANK_STALE:     return tankStale      != s.tankStale;
+        case Field::TANK_TEMP:      return floatChanged(tankTempC,  s.tankTempC);
         case Field::PUMP_STATE:     return pumpState      != s.pumpState;
         case Field::OPERATING_MODE: return mode           != s.mode;
         case Field::VOLTAGE:        return floatChanged(voltage,    s.voltage);
@@ -53,6 +55,7 @@ void SystemState::markSeen(Consumer consumer) {
     StateSnapshot& s = _snapshots[static_cast<uint8_t>(consumer)];
     s.tankLevelPct   = tankLevelPct;
     s.tankStale      = tankStale;
+    s.tankTempC      = tankTempC;
     s.pumpState      = pumpState;
     s.mode           = mode;
     s.voltage        = voltage;

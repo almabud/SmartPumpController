@@ -36,6 +36,7 @@ enum class Consumer : uint8_t {
 enum class Field : uint8_t {
     TANK_LEVEL,
     TANK_STALE,
+    TANK_TEMP,
     PUMP_STATE,
     OPERATING_MODE,
     VOLTAGE,
@@ -58,6 +59,7 @@ enum class Field : uint8_t {
 struct StateSnapshot {
     uint8_t       tankLevelPct    = 255;    // 255 = never seen, forces first draw
     bool          tankStale       = false;
+    float         tankTempC       = -1.0f;
     PumpState     pumpState       = PumpState::OFF;
     OperatingMode mode            = OperatingMode::AUTO;
     float         voltage         = -1.0f;
@@ -86,6 +88,7 @@ public:
     uint8_t  tankLevelPct     = 50;      // 0-100% tank fill level
     uint32_t lastPacketTimeMs = 0;      // millis() timestamp of last valid radio packet
     bool     tankStale        = false;   // true until first valid packet received
+    float    tankTempC        = 27.5f;   // water temperature (C), from tank sensor packet
 
     // ---- Power monitoring ------------------------------------------------
     float    voltage          = 0.0f;   // mains voltage (V RMS)

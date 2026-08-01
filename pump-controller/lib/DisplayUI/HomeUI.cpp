@@ -104,6 +104,32 @@ void DisplayUI::_drawTankLevel(SystemState& state) {
     }
     _sprite.setTextFont(1);
 }
+
+void DisplayUI::_drawTankTemp(SystemState& state) {
+    if (state.tankStale) return;
+
+    const int16_t CENTER_X = 22;   // BAR_X + BAR_WIDTH / 2
+    const int16_t Y        = 84;   // just below the level % (font 2 at y = 64)
+
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%.1f", state.tankTempC);
+
+    _sprite.setTextFont(1);
+    _sprite.setTextSize(1);
+    _sprite.setTextColor(TFT_WHITE);
+
+    // Value + degree mark + "C", centered as one unit.
+    // Font 1 has no degree glyph, so the ring is drawn as a primitive.
+    int16_t valueWidth = _sprite.textWidth(buf);
+    int16_t totalWidth = valueWidth + 3 + _sprite.textWidth("C");
+    int16_t x          = CENTER_X - totalWidth / 2;
+
+    _sprite.setCursor(x, Y);
+    _sprite.print(buf);
+    _sprite.drawCircle(x + valueWidth + 1, Y + 1, 1, TFT_WHITE);
+    _sprite.setCursor(x + valueWidth + 4, Y);
+    _sprite.print("C");
+}
 // ------------------------------------
 
 // --- Power switch drawings ---
@@ -157,6 +183,8 @@ void DisplayUI::_drawHome(SystemState& state) {
     _drawTitleBar(state);
     // --- Tank level ---
     _drawTankLevel(state);
+    // --- Tank temperature ---
+    _drawTankTemp(state);
     // --- Pump state ---
     _drawPumpState(state);
     // --- Pump timer ---
