@@ -102,9 +102,6 @@ and drives the relay safely. The core control loop is fully operational.
 - Manual override tested and confirmed: buttons can force pump on/off,
   safety rules still apply
 
-> **Solenoid valve:** deferred to v3. `SolenoidDriver` stub exists in the codebase
-> but is not implemented or wired in v2.
-
 **Checkpoint — phase is done when:**
 - V / A / W / kWh read correctly and display on home screen
 - In AUTO mode: pump clicks on when tank drops below LOW threshold,
@@ -207,29 +204,3 @@ editor is usable, fault handling is robust, and the first house deployment happe
 5. **Mains wiring is always the last thing connected** and the first thing
    disconnected during any rework. Never probe mains while the board is powered.
 
----
-
-## Version 3 — Solenoid valve (future)
-
-> Not part of v2. Documented here so the design intent is recorded.
-
-**What it adds:** a solenoid valve on the same line as the pump, giving independent
-control of water flow separate from the pump motor itself. Enables scenes like
-"pump running but valve closed to fill a secondary outlet" or "valve open for gravity
-flow without the pump."
-
-**What needs to happen before v3:**
-- v2 fully deployed and stable in the field (at least 3 houses, 1 month runtime)
-- Plumbing sequencing constraint confirmed with a real plumber — specifically,
-  whether opening/closing the solenoid while the pump is mid-cycle risks water
-  hammer or dead-heading the pump on your specific installation
-- `SolenoidDriver` stub already exists in `pump-controller/lib/SolenoidDriver/`
-  — v3 just fills in the implementation
-- `SystemState` already has `solenoidState`, `desiredSolenoidAction`,
-  `solenoidFault` fields — no struct changes needed
-- `SceneEngine` will need updating to produce `desiredSolenoidAction` alongside
-  `desiredPumpAction`, with the sequencing rule enforced there
-
-**Hardware addition for v3:**
-- Solenoid valve wired to GPIO10 (already reserved in `config.h`)
-- Same mains-side safety rules as the relay — fused, enclosed, last to connect

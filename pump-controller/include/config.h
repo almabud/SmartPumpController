@@ -33,7 +33,6 @@
 
 // ---------- Actuators ----------
 #define PIN_PUMP_RELAY     18
-#define PIN_SOLENOID       10
 
 // ---------- I2C (reserved for expansion) ----------
 #define PIN_I2C_SDA         8
@@ -41,7 +40,8 @@
 
 // ---------- Spare / expansion ----------
 // Analog spares (ADC1): GPIO7
-// 3rd SPI device: joins HSPI radio bus + 1 CS pin (GPIO6/7, or GPIO48 if free)
+// General-purpose spare: GPIO10
+// 3rd SPI device: joins HSPI radio bus + 1 CS pin (GPIO7/10, or GPIO48 if free)
 // GPIO48: verify onboard RGB; free it if present
 
 // ---------- Calibration (tune on real hardware) ----------

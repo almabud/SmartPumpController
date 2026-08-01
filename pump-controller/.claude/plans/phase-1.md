@@ -43,9 +43,6 @@ pump-controller/
     ├── PumpDriver/
     │   ├── PumpDriver.h          ← unchanged
     │   └── PumpDriver.cpp        ← NEW stub
-    ├── SolenoidDriver/
-    │   ├── SolenoidDriver.h      ← unchanged
-    │   └── SolenoidDriver.cpp    ← NEW stub (v3, not used in v2)
     └── DisplayUI/
         ├── DisplayUI.h           ← unchanged
         └── DisplayUI.cpp         ← NEW real implementation
@@ -343,7 +340,6 @@ This is the real scheduler — no `delay()`, every module called at its own cade
 #include "CloudClient/CloudClient.h"
 #include "SceneEngine/SceneEngine.h"
 #include "PumpDriver/PumpDriver.h"
-#include "SolenoidDriver/SolenoidDriver.h"
 #include "DisplayUI/DisplayUI.h"
 
 // ---- Central state -------------------------------------------------------
@@ -357,7 +353,6 @@ WifiManager    wifiManager;
 CloudClient    cloudClient;
 SceneEngine    sceneEngine;
 PumpDriver     pumpDriver;
-SolenoidDriver solenoidDriver;
 DisplayUI      displayUI;
 
 // ---- Scheduler timestamps ------------------------------------------------
@@ -380,7 +375,6 @@ void setup() {
     wifiManager.begin();
     cloudClient.begin();
     pumpDriver.begin();
-    solenoidDriver.begin();
     displayUI.begin();
 
     Serial.println("=== all modules initialised ===");
@@ -472,7 +466,6 @@ pio device monitor
 [WifiManager] begin (stub — Phase 5)
 [CloudClient] begin (stub — Phase 5)
 [PumpDriver] begin — pump OFF (relay HIGH)
-[SolenoidDriver] begin (deferred — v3)
 [DisplayUI] begin
 === all modules initialised ===
 ```

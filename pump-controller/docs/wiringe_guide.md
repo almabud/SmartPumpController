@@ -332,17 +332,7 @@ Not currently connected. Reserved for future RFM69 upgrade.
 
 ---
 
-## 9. Solenoid valve driver (reserved)
-
-Not currently wired. Reserved pin:
-
-```cpp
-#define PIN_SOLENOID   10
-```
-
----
-
-## 10. RGB status LED (onboard WS2812, GPIO48)
+## 9. RGB status LED (onboard WS2812, GPIO48)
 
 Onboard LED — driven by GPIO48 via NeoPixel protocol.
 Verify jumper state on your board before use.
@@ -383,7 +373,7 @@ Wall socket
 | 7 | Spare | ADC1 spare |
 | 8 | Reserved | I2C SDA |
 | 9 | Reserved | I2C SCL |
-| 10 | Reserved | Solenoid |
+| 10 | Spare | Free |
 | 11 | Active | Button LEFT |
 | 12 | Active | Button UP |
 | 13 | Active | Button SELECT / OK |
