@@ -15,6 +15,9 @@ public:
     void begin();
     void update(SystemState& state, ButtonEvent event);
 
+    // Boot screen — called from setup() only, before the scheduler starts.
+    void showBoot(uint8_t step, uint8_t total, const char* label);
+
 private:
     ScreenId _currentScreen = ScreenId::HOME;
     bool     _screenChanged = true;
@@ -24,6 +27,8 @@ private:
     void _goTo(ScreenId screen);
     const char* _getScreenTitle(ScreenId screen);
 
+    // Boot screen drawing
+    void _drawBoot(uint8_t step, uint8_t total, const char* label);
     // Home screen drawing
     void _drawHome(SystemState& state);
     // Title bar drawing

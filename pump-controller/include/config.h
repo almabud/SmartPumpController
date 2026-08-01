@@ -54,3 +54,9 @@
 #define INTERVAL_DISPLAY_MS     500
 #define INTERVAL_WIFI_CHECK_MS 5000
 #define INTERVAL_CLOUD_MS      2000
+
+// ---------- Boot screen ----------
+#define FIRMWARE_VERSION     "v2.0"
+#define BOOT_TOTAL_STEPS         3   // Display, Inputs, Ready — bump as modules land
+#define BOOT_STEP_MIN_MS       500   // per-step dwell so the progress bar visibly fills
+#define BOOT_HOLD_MS           500   // extra hold on the completed bar before the home screen

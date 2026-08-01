@@ -23,8 +23,15 @@ void setup() {
     delay(300);
     Serial.println("=== pump-controller v2 booting ===");
 
-    inputManager.begin();
+    // Display comes up first — nothing can be shown before it.
     displayUI.begin();
+    displayUI.showBoot(1, BOOT_TOTAL_STEPS, "Starting display...");
+
+    inputManager.begin();
+    displayUI.showBoot(2, BOOT_TOTAL_STEPS, "Starting inputs...");
+
+    displayUI.showBoot(BOOT_TOTAL_STEPS, BOOT_TOTAL_STEPS, "Ready");
+    delay(BOOT_HOLD_MS);   // let the completed bar register before the home screen
 
     Serial.println("=== ready ===");
 }
