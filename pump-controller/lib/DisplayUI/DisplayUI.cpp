@@ -20,8 +20,11 @@ void DisplayUI::begin() {
 }
 
 void DisplayUI::update(SystemState& state, ButtonEvent event) {
-   _handleNavigation(event);
+   if (event != ButtonEvent::NONE) _lastInputMs = millis();
+
+   _handleNavigation(state, event);
    _handleTimerEdit(state, event);
+   _applyIdleTimeout();
    state.uiEditing = _editing();   // tells InputManager to keep off the pump
 
    // uptimeSeconds already forces a redraw once a second, so the blink needs a
@@ -40,8 +43,49 @@ void DisplayUI::update(SystemState& state, ButtonEvent event) {
     _screenChanged = false;
 }
 
-void DisplayUI::_handleNavigation(ButtonEvent event) {
-    // navigation added as screens are implemented
+// Owns the buttons whenever nothing is being edited: it moves the focus around
+// the home screen and hands the timer over to the editor on SELECT.
+void DisplayUI::_handleNavigation(SystemState& state, ButtonEvent event) {
+    if (event == ButtonEvent::NONE || _editing()) return;
+
+    switch (event) {
+        case ButtonEvent::DOWN_PRESS:
+            // Walks down the focusable widgets. The timer is the last one, so
+            // stepping past it drops focus — append to FocusTarget to extend.
+            _focus = (_focus == FocusTarget::NONE) ? FocusTarget::PUMP_TIMER
+                                                   : FocusTarget::NONE;
+            break;
+
+        // Backing out. UP is the reverse of the walk, LEFT matches how LEFT
+        // backs out of the first field once inside the editor.
+        case ButtonEvent::UP_PRESS:
+        case ButtonEvent::LEFT_PRESS:
+            _focus = FocusTarget::NONE;
+            break;
+
+        case ButtonEvent::SELECT_PRESS:
+            // Focus is only a highlight; SELECT is what commits to editing.
+            if (_focus == FocusTarget::PUMP_TIMER) _beginTimerEdit(state);
+            break;
+
+        default:
+            return;   // nothing moved, so nothing to redraw
+    }
+
+    _screenChanged = true;
+}
+
+void DisplayUI::_applyIdleTimeout() {
+    if (_focus == FocusTarget::NONE && !_editing()) return;
+
+    const uint32_t limit = _editing() ? UI_EDIT_TIMEOUT_MS : UI_FOCUS_TIMEOUT_MS;
+    if (millis() - _lastInputMs < limit) return;
+
+    // Same exit as backing out by hand: the edit is dropped, and a timer that is
+    // already running is left to run.
+    _timerField    = TimerField::NONE;
+    _focus         = FocusTarget::NONE;
+    _screenChanged = true;
 }
 
 // ---- Pump timer editing --------------------------------------------------
@@ -122,41 +166,39 @@ void DisplayUI::_commitTimer(SystemState& state) {
     state.timerRequest  = TimerRequest::START;
 
     _timerField = TimerField::NONE;
+    _focus      = FocusTarget::NONE;   // the timer is armed, the widget is done
     Serial.printf("[DisplayUI] timer set - %lus window, break %lus after every %lus of running\n",
                   (unsigned long)total, (unsigned long)brk, (unsigned long)run);
 }
 
-void DisplayUI::_handleTimerEdit(SystemState& state, ButtonEvent event) {
-    if (event == ButtonEvent::NONE) return;
+// Entered from the focused timer with SELECT — see _handleNavigation().
+void DisplayUI::_beginTimerEdit(SystemState& state) {
+    // Preload whatever is already armed so an edit is a tweak, not a retype.
+    _editTotalH   = state.timerTotalSec / 3600;
+    _editTotalM   = (state.timerTotalSec % 3600) / 60;
+    _editBrkH     = state.timerBreakSec    / 3600;
+    _editBrkM     = (state.timerBreakSec   % 3600) / 60;
+    _editRunH     = state.timerRunSec      / 3600;
+    _editRunM     = (state.timerRunSec     % 3600) / 60;
+    _useDutyCycle = (state.timerBreakSec > 0 && state.timerRunSec > 0);
 
-    // Not editing yet — DOWN is the way in.
-    if (!_editing()) {
-        if (event != ButtonEvent::DOWN_PRESS) return;
-
-        // Preload whatever is already armed so an edit is a tweak, not a retype.
-        _editTotalH   = state.timerTotalSec / 3600;
-        _editTotalM   = (state.timerTotalSec % 3600) / 60;
-        _editBrkH     = state.timerBreakSec    / 3600;
-        _editBrkM     = (state.timerBreakSec   % 3600) / 60;
-        _editRunH     = state.timerRunSec      / 3600;
-        _editRunM     = (state.timerRunSec     % 3600) / 60;
-        _useDutyCycle = (state.timerBreakSec > 0 && state.timerRunSec > 0);
-
-        // Preloaded values are already the user's, so they show as digits;
-        // anything not preloaded starts on its label.
-        _timerTouched = 0;
-        if (state.timerTotalSec > 0) {
-            _timerTouched |= _bit(TimerField::TOTAL_HH) | _bit(TimerField::TOTAL_MM);
-        }
-        if (_useDutyCycle) {
-            _timerTouched |= _bit(TimerField::BRK_HH) | _bit(TimerField::BRK_MM)
-                           | _bit(TimerField::RUN_HH) | _bit(TimerField::RUN_MM);
-        }
-
-        _timerField   = TimerField::TOTAL_HH;
-        _timerBlinkOn = false;   // update() flips it, so the field shows first
-        return;
+    // Preloaded values are already the user's, so they show as digits;
+    // anything not preloaded starts on its label.
+    _timerTouched = 0;
+    if (state.timerTotalSec > 0) {
+        _timerTouched |= _bit(TimerField::TOTAL_HH) | _bit(TimerField::TOTAL_MM);
     }
+    if (_useDutyCycle) {
+        _timerTouched |= _bit(TimerField::BRK_HH) | _bit(TimerField::BRK_MM)
+                       | _bit(TimerField::RUN_HH) | _bit(TimerField::RUN_MM);
+    }
+
+    _timerField   = TimerField::TOTAL_HH;
+    _timerBlinkOn = false;   // update() flips it, so the field shows first
+}
+
+void DisplayUI::_handleTimerEdit(SystemState& state, ButtonEvent event) {
+    if (event == ButtonEvent::NONE || !_editing()) return;
 
     switch (event) {
         case ButtonEvent::UP_PRESS:
@@ -169,9 +211,13 @@ void DisplayUI::_handleTimerEdit(SystemState& state, ButtonEvent event) {
 
         case ButtonEvent::LEFT_PRESS:
             switch (_timerField) {
-                // Backing off the first field leaves edit mode. Only the edit is
-                // discarded — a timer already running is left alone.
-                case TimerField::TOTAL_HH: _timerField = TimerField::NONE;     break;
+                // Backing off the first field leaves edit mode, and leaves the
+                // widget behind with it. Only the edit is discarded — a timer
+                // already running is left alone.
+                case TimerField::TOTAL_HH:
+                    _timerField = TimerField::NONE;
+                    _focus      = FocusTarget::NONE;
+                    break;
                 case TimerField::TOTAL_MM: _timerField = TimerField::TOTAL_HH; break;
                 case TimerField::BRK_HH:   _timerField = TimerField::TOTAL_MM; break;
                 case TimerField::BRK_MM:   _timerField = TimerField::BRK_HH;   break;
@@ -205,6 +251,7 @@ void DisplayUI::_handleTimerEdit(SystemState& state, ButtonEvent event) {
             // Same as backing out with LEFT: drop the edit, leave any running
             // timer running. InputManager stands down while uiEditing is set.
             _timerField = TimerField::NONE;
+            _focus      = FocusTarget::NONE;
             break;
 
         default:

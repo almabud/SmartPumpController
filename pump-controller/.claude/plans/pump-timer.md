@@ -38,8 +38,19 @@ out, and the timer always ends on a run, never on a trailing break.
 
 ## Key map
 
-DOWN from the home screen enters edit; the focused field blinks yellow and the
-box border turns yellow.
+Getting in takes two steps: DOWN **focuses** the timer box — the border turns
+yellow, nothing else changes — and SELECT then opens the editor, putting a
+blinking cursor on row 1's `HH`. The border says the box has the buttons; the
+cursor is what says it is being edited. The split exists so DOWN stays free to
+mean "next widget" as more of the home screen becomes focusable (`FocusTarget`
+in `DisplayUI.h` is that walk order).
+
+| Key | While focused, not editing |
+|---|---|
+| DOWN | next focusable widget; the timer is the last one, so this drops focus |
+| UP / LEFT | drops focus |
+| SELECT | enters edit |
+| SELECT held 1 s | unchanged pump toggle / timer cancel — focus is only a highlight, so `uiEditing` stays false and InputManager keeps its override |
 
 | Key | While editing |
 |---|---|
@@ -49,8 +60,18 @@ box border turns yellow.
 | SELECT | validate, commit, start — the only thing that starts anything |
 | SELECT held 1 s | exits, discarding — same as LEFT off the first field |
 
-Backing out never disturbs a timer that is already running; only the edit is
-dropped. Reaching row 2 does not start anything on its own.
+Every way out of edit — LEFT off the first field, the long press, or a
+successful commit — drops the focus as well, so the box is never left highlighted
+with nothing to do.
+
+Both states also back out on their own once the buttons go quiet:
+`UI_FOCUS_TIMEOUT_MS` for a focused box, `UI_EDIT_TIMEOUT_MS` for an open edit
+(longer, since setting a timer has natural pauses). The check runs at the display
+cadence, so it is accurate to `INTERVAL_DISPLAY_MS`.
+
+Backing out never disturbs a timer that is already running — by hand or by
+timeout, only the edit is dropped. Reaching row 2 does not start anything on its
+own.
 
 Minutes step by 1 (`TIMER_MINUTE_STEP`), hours wrap at `TIMER_MAX_HOURS`.
 Stepping **down** out of a never-touched field lands on `00` rather than
@@ -61,6 +82,7 @@ wrapping to the top, since down-from-nothing reading as 23 is jarring.
 | State | Row 1 | Row 2 |
 |---|---|---|
 | Nothing armed | `HH:MM` dim | `HH:MM-HH:MM` dim |
+| Focused, not editing | whatever the box would show anyway — only the border changes, to yellow | as above |
 | Editing | working values, focused field yellow + blinking | as above, live once row 2 is opened |
 | Running | `HH:MM:SS` white, counting the budget down | the committed cycle, or dim placeholder if none |
 | On a break | `HH:MM:SS` **orange**, counting the break down | as above |

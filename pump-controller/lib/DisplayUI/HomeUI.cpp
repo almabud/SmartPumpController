@@ -184,11 +184,14 @@ void DisplayUI::_drawPumpTimer(SystemState& state) {
     const int8_t WIDTH = 80;
 
     const bool editing  = _editing();
+    const bool focused  = (_focus == FocusTarget::PUMP_TIMER);
     const bool running  = (state.timerPhase != TimerPhase::IDLE);
     const bool breaking = (state.timerPhase == TimerPhase::BREAKING);
 
-    // A yellow border is the cue that the box has the buttons.
-    _sprite.drawRect(X, Y, WIDTH, 35, editing ? TFT_YELLOW : TFT_DARKGREY);
+    // A yellow border is the cue that the box has the buttons, focused or being
+    // edited. The blinking field cursor is what tells the two apart.
+    _sprite.drawRect(X, Y, WIDTH, 35, (editing || focused) ? TFT_YELLOW
+                                                           : TFT_DARKGREY);
 
     // --- Row 1: the whole run window ---
     // A running window also shows seconds, so the row is measured and centred

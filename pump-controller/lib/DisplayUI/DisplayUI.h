@@ -9,6 +9,14 @@ enum class ScreenId : uint8_t {
     HOME
 };
 
+// Which home-screen widget currently holds the buttons. Focus is a step short of
+// editing: it only highlights. The order here is the order DOWN walks, so a new
+// focusable widget is added by appending to it.
+enum class FocusTarget : uint8_t {
+    NONE,
+    PUMP_TIMER
+};
+
 // Cursor position while the pump timer is being edited. NONE = not editing.
 enum class TimerField : uint8_t {
     NONE,
@@ -29,7 +37,10 @@ public:
 private:
     ScreenId _currentScreen = ScreenId::HOME;
     bool     _screenChanged = true;
-    uint8_t  _menuIndex     = 0;
+
+    // ---- Focus / idle ----
+    FocusTarget _focus       = FocusTarget::NONE;
+    uint32_t    _lastInputMs = 0;   // last button press, for the idle timeouts
 
     // ---- Pump timer editing ----
     TimerField _timerField   = TimerField::NONE;
@@ -44,6 +55,7 @@ private:
     uint8_t    _editRunH   = 0, _editRunM   = 0;
 
     void _handleTimerEdit(SystemState& state, ButtonEvent event);
+    void _beginTimerEdit(SystemState& state);
     void _commitTimer(SystemState& state);
     void _adjustTimerField(int8_t dir);
     void _resetDutyRow();
@@ -62,7 +74,9 @@ private:
             && !_touched(TimerField::RUN_HH) && !_touched(TimerField::RUN_MM);
     }
 
-    void _handleNavigation(ButtonEvent event);
+    void _handleNavigation(SystemState& state, ButtonEvent event);
+    // Backs focus (and any edit) out once the buttons have been idle too long.
+    void _applyIdleTimeout();
     void _goTo(ScreenId screen);
     const char* _getScreenTitle(ScreenId screen);
 

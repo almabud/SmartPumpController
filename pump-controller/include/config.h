@@ -79,6 +79,12 @@
 #define BUTTON_DEBOUNCE_MS       30
 #define BUTTON_LONG_PRESS_MS   1000   // hold SELECT this long to toggle the pump
 
+// A widget left focused or an edit left half-finished backs out on its own, so
+// the display never sits waiting on a user who walked away. Editing gets the
+// longer window — setting a timer has natural pauses.
+#define UI_FOCUS_TIMEOUT_MS  10000   // no press for this long drops the focus
+#define UI_EDIT_TIMEOUT_MS   30000   // no press for this long discards the edit
+
 // ---------- Pump safety ----------
 // The relay module is 5V-logic: a 3.3V IN reads as LOW, so the pin alone can
 // never release it. GPIO18 drives a BC547 low-side switch instead, which
