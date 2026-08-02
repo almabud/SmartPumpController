@@ -370,10 +370,10 @@ Wall socket
 | 4 | Active | ACS712 OUT (via divider) |
 | 5 | Active | ZMPT101B OUT |
 | 6 | Active | Button DOWN |
-| 7 | Spare | ADC1 spare |
+| 7 | Claimed | RH_ASK unused TX — driven by the library, leave unwired |
 | 8 | Reserved | I2C SDA |
 | 9 | Reserved | I2C SCL |
-| 10 | Spare | Free |
+| 10 | Claimed | RH_ASK unused PTT — driven by the library, leave unwired |
 | 11 | Active | Button LEFT |
 | 12 | Active | Button UP |
 | 13 | Active | Button SELECT / OK |

@@ -22,6 +22,13 @@
 
 // ---------- Radio: ACTIVE NOW = 433 ASK (single data pin, RH_ASK) ----------
 #define PIN_RF433_RX       16
+#define RF433_BITRATE    2000    // must match water_tank/include/config.h
+
+// RH_ASK's constructor claims a TX and a PTT pin whether or not this node ever
+// transmits. Hand it real free pins and leave them unwired — the library's own
+// ESP32 example uses GPIO0, which is a strapping pin on the S3.
+#define PIN_RF433_TX_UNUSED    7
+#define PIN_RF433_PTT_UNUSED  10
 
 // ---------- Radio: RESERVED future RFM69HCW on SPI3 / HSPI ----------
 #define PIN_RADIO_SCLK     42
@@ -39,14 +46,27 @@
 #define PIN_I2C_SCL         9
 
 // ---------- Spare / expansion ----------
-// Analog spares (ADC1): GPIO7
-// General-purpose spare: GPIO10
-// 3rd SPI device: joins HSPI radio bus + 1 CS pin (GPIO7/10, or GPIO48 if free)
+// GPIO7 and GPIO10 are now claimed by RH_ASK as its unused TX/PTT pins. They
+// carry no signal and nothing is wired to them, but the library drives them as
+// outputs, so they are no longer available.
+// 3rd SPI device: joins HSPI radio bus + 1 CS pin (GPIO48 if free)
 // GPIO48: verify onboard RGB; free it if present
 
 // ---------- Calibration (tune on real hardware) ----------
 #define ACS712_DIVIDER_RATIO   0.686f   // 4.6 / (2.1 + 4.6) — your actual resistors
 #define ACS712_MV_PER_AMP      66.0f
+
+// ---------- Tank calibration (placeholders — measure on site) ----------
+// The distances the sensor reports at the two extremes. Read them off the
+// [RadioReceiver] log line with the tank full and then empty. These are only
+// the power-on defaults; they become user-editable from the config page.
+#define TANK_DISTANCE_FULL_MM    300   // TODO reading when the tank is FULL
+#define TANK_DISTANCE_EMPTY_MM  1500   // TODO reading when the tank is EMPTY
+
+#define TANK_STALE_TIMEOUT_MS  10000   // 5 missed packets at the node's 2s send interval
+
+// Link diagnostics cadence. Set to 0 to silence once the link is trusted.
+#define RADIO_STATS_INTERVAL_MS 5000
 
 // ---------- Scheduler intervals ----------
 #define INTERVAL_RADIO_MS        50
@@ -73,6 +93,6 @@
 
 // ---------- Boot screen ----------
 #define FIRMWARE_VERSION     "v2.0"
-#define BOOT_TOTAL_STEPS         3   // Display, Inputs, Ready — bump as modules land
+#define BOOT_TOTAL_STEPS         4   // Display, Inputs, Radio, Ready — bump as modules land
 #define BOOT_STEP_MIN_MS       500   // per-step dwell so the progress bar visibly fills
 #define BOOT_HOLD_MS           500   // extra hold on the completed bar before the home screen

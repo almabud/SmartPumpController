@@ -51,7 +51,7 @@ droplets do not pool on the face. Consider a small drip shield above the module 
 
 ---
 
-## 2. 433 MHz ASK Transmitter (7-pin module)
+## 2. 433 MHz ASK Transmitter (3-pin module, FS1000A type)
 
 **Purpose:** transmits `SensorPacket` (raw distance + temperature) to the ESP32 receiver.
 **One-way link:** this board transmits only, ESP32 receives only.
@@ -79,26 +79,27 @@ Faulted readings are still transmitted with the matching flag set, so the ESP32 
 
 | Module Pin | Connects to | Notes |
 |------------|-------------|-------|
-| ANT (pin 1) | 17.3cm straight wire | Primary antenna — mandatory |
-| GND (pin 2) | GND | |
-| VCC (pin 3) | 5V | |
-| CS  (pin 4) | 5V | Tied HIGH permanently — always enabled |
-| DATA (pin 5) | D4 | Data signal from Nano |
-| GND (pin 6) | GND | Same rail as pin 2 |
-| ANT (pin 7) | 17.3cm wire or floating | Second antenna connection |
+| VCC | 5V | Range scales with supply voltage — use 5V, not 3.3V |
+| DATA | D4 | Data signal from Nano; silkscreened `ATAD` on some clones |
+| GND | GND | |
+| ANT pad | 17.3cm straight wire | Solder pad at the board corner — mandatory |
 
-**CS pin:** tied permanently to 5V — no GPIO needed. Module stays always active.
-The firmware paces transmissions with a `millis()` interval (`INTERVAL_SEND_MS`), not CS sleep mode.
+**Check the silkscreen before wiring.** The three-pin order is not standardised across
+clones — some are `DATA VCC GND`, others `VCC DATA GND`. Read the labels on your board
+rather than trusting any diagram, including this one.
 
-**Antenna:** solder a 17.3cm straight, solid-core wire to ANT (pin 1).
-Keep it vertical and uncoiled — this is the single most important factor for range.
-Pin 7 (second ANT): optionally add a second identical wire, or leave floating.
+**There is no CS or enable pin on this module.** It transmits whenever DATA carries a
+signal and idles otherwise. The firmware paces transmissions with a `millis()` interval
+(`INTERVAL_SEND_MS`); there is no sleep mode to drive.
+
+**Antenna:** solder a 17.3cm straight, solid-core wire to the ANT pad (the lone hole at
+the corner of the board — a quarter wavelength at 433 MHz). Keep it vertical and uncoiled.
+This is the single most important factor for range; without it expect roughly a metre.
 
 **config.h pins:**
 ```cpp
-#define PIN_RF433_TX           4    // module DATA pin
+#define PIN_RF433_TX           4    // module DATA pin — the only pin the firmware touches
 #define RF433_BITRATE       2000    // must match the ESP32 receiver
-// CS tied to 5V — no pin defined, no GPIO needed
 
 // RH_ASK's constructor claims an RX pin and a PTT pin whether we use them or
 // not, and pinMode(255) reads out of bounds on AVR — so hand it real pins and
@@ -231,12 +232,12 @@ Arduino Nano
                     └─────────────┘
 
                     ┌─────────────┐
-              D4 ───┤ DATA (pin5) │
-         5V ────────┤ VCC (pin3)  │ 433 TX module
-         5V ────────┤ CS  (pin4)  │ (always enabled)
-        GND ────────┤ GND (pin2,6)│
-              ANT ──┤ ANT (pin1)  │ 17.3cm wire
+              D4 ───┤ DATA        │ 433 TX module
+         5V ────────┤ VCC         │ (FS1000A, 3-pin)
+        GND ────────┤ GND         │
+              ANT ──┤ ANT pad     │ 17.3cm wire, soldered
                     └─────────────┘
+      pin order varies by clone — check the silkscreen
 
               D5 ───┬─── DATA (yellow) ─── DS18B20
 [4.6kΩ: 5V to D5] ─┘

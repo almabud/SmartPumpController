@@ -67,6 +67,7 @@ end to end.
 
 **Deliverables — ESP32 (`pump-controller`):**
 - `RadioReceiver` — RH_ASK receive, checksum validation, packet parsing
+  (implemented — see [radio-receiver.md](radio-receiver.md))
 - Staleness detection — if no valid packet for `TANK_STALE_TIMEOUT_MS`, set
   `state.tankStale = true` and stop using the reading for pump decisions
 - Tank level % calculated from raw distance + tank dimensions in `config.h`

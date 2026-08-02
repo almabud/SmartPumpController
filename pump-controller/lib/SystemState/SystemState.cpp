@@ -12,6 +12,8 @@ bool SystemState::hasChanged(Consumer consumer) const {
     return
         tankLevelPct    != s.tankLevelPct    ||
         tankStale       != s.tankStale       ||
+        tankSensorFault != s.tankSensorFault ||
+        tankTempFault   != s.tankTempFault   ||
         pumpState       != s.pumpState       ||
         mode            != s.mode            ||
         powerFault      != s.powerFault      ||
@@ -36,6 +38,9 @@ bool SystemState::hasChanged(Consumer consumer, Field field) const {
         case Field::TANK_LEVEL:     return tankLevelPct   != s.tankLevelPct;
         case Field::TANK_STALE:     return tankStale      != s.tankStale;
         case Field::TANK_TEMP:      return floatChanged(tankTempC,  s.tankTempC);
+        case Field::TANK_SENSOR_FAULT:
+                                    return tankSensorFault != s.tankSensorFault
+                                        || tankTempFault   != s.tankTempFault;
         case Field::PUMP_STATE:     return pumpState      != s.pumpState;
         case Field::OPERATING_MODE: return mode           != s.mode;
         case Field::VOLTAGE:        return floatChanged(voltage,    s.voltage);
@@ -57,9 +62,11 @@ bool SystemState::hasChanged(Consumer consumer, Field field) const {
 
 void SystemState::markSeen(Consumer consumer) {
     StateSnapshot& s = _snapshots[static_cast<uint8_t>(consumer)];
-    s.tankLevelPct   = tankLevelPct;
-    s.tankStale      = tankStale;
-    s.tankTempC      = tankTempC;
+    s.tankLevelPct    = tankLevelPct;
+    s.tankStale       = tankStale;
+    s.tankTempC       = tankTempC;
+    s.tankSensorFault = tankSensorFault;
+    s.tankTempFault   = tankTempFault;
     s.pumpState      = pumpState;
     s.mode           = mode;
     s.voltage        = voltage;

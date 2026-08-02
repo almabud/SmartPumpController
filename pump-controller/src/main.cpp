@@ -7,14 +7,16 @@
 #include "InputManager.h"
 #include "PumpDriver.h"
 #include "PumpTimer.h"
+#include "RadioReceiver.h"
 #include "SceneEngine.h"
 
 // ---- Central state -------------------------------------------------------
 SystemState  state;
 
 // ---- Module instances ----------------------------------------------------
-DisplayUI    displayUI;
-InputManager inputManager;
+DisplayUI     displayUI;
+InputManager  inputManager;
+RadioReceiver radioReceiver;
 PumpDriver   pumpDriver;
 PumpTimer    pumpTimer;
 SceneEngine  sceneEngine;
@@ -42,6 +44,9 @@ void setup() {
     inputManager.begin();
     displayUI.showBoot(2, BOOT_TOTAL_STEPS, "Starting inputs...");
 
+    radioReceiver.begin();
+    displayUI.showBoot(3, BOOT_TOTAL_STEPS, "Starting radio...");
+
     displayUI.showBoot(BOOT_TOTAL_STEPS, BOOT_TOTAL_STEPS, "Ready");
     delay(BOOT_HOLD_MS);   // let the completed bar register before the home screen
 
@@ -53,6 +58,7 @@ void loop() {
 
     // Every iteration — time sensitive
     inputManager.update(state);
+    radioReceiver.update(state); // 433 packets -> tank fields
     pumpTimer.update(state);     // countdown -> request
     sceneEngine.update(state);   // request  -> desired action
     pumpDriver.update(state);    // desired action -> relay + pumpState

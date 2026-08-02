@@ -1,6 +1,7 @@
 // lib/SystemState/SystemState.h
 #pragma once
 #include <stdint.h>
+#include "config.h"   // tank calibration defaults
 
 // ---- Enumerations --------------------------------------------------------
 
@@ -49,6 +50,7 @@ enum class Field : uint8_t {
     TANK_LEVEL,
     TANK_STALE,
     TANK_TEMP,
+    TANK_SENSOR_FAULT,
     PUMP_STATE,
     OPERATING_MODE,
     VOLTAGE,
@@ -73,6 +75,8 @@ struct StateSnapshot {
     uint8_t       tankLevelPct    = 255;    // 255 = never seen, forces first draw
     bool          tankStale       = false;
     float         tankTempC       = -1.0f;
+    bool          tankSensorFault = false;
+    bool          tankTempFault   = false;
     PumpState     pumpState       = PumpState::OFF;
     OperatingMode mode            = OperatingMode::AUTO;
     float         voltage         = -1.0f;
@@ -100,10 +104,23 @@ class SystemState {
 public:
 
     // ---- Tank / radio ----------------------------------------------------
-    uint8_t  tankLevelPct     = 50;      // 0-100% tank fill level
+    // Written by RadioReceiver. Nothing is known until a packet lands, so the
+    // defaults must read as "no data", not as a plausible tank.
+    uint8_t  tankLevelPct     = 0;      // 0-100% tank fill level
     uint32_t lastPacketTimeMs = 0;      // millis() timestamp of last valid radio packet
-    bool     tankStale        = false;   // true until first valid packet received
-    float    tankTempC        = 27.5f;   // water temperature (C), from tank sensor packet
+    bool     tankStale        = true;   // true until the first valid packet arrives
+    float    tankTempC        = 0.0f;   // water temperature (C), from tank sensor packet
+    uint8_t  tankSeq          = 0;      // seq of the last accepted packet, for drop detection
+
+    // Faults the node reports in-band. Distinct from tankStale: packets are
+    // arriving fine, it is the sensor behind them that is unhappy.
+    bool     tankSensorFault  = false;  // no echo, or echo outside the valid window
+    bool     tankTempFault    = false;  // DS18B20 unreadable; tankTempC is the node's fallback
+
+    // Calibration — the distances the sensor reports at the two extremes.
+    // Seeded from config.h, user-editable from the config page in a later plan.
+    uint16_t tankFullMm       = TANK_DISTANCE_FULL_MM;
+    uint16_t tankEmptyMm      = TANK_DISTANCE_EMPTY_MM;
 
     // ---- Power monitoring ------------------------------------------------
     float    voltage          = 0.0f;   // mains voltage (V RMS)
