@@ -85,7 +85,7 @@
 // inverts — so HIGH at the pin energises the relay, even though the module
 // itself is active-LOW at its IN terminal. See docs/wiringe_guide.md section 6.
 #define RELAY_ACTIVE_LOW          0   // 0 = HIGH energises the relay
-#define PUMP_MIN_OFF_MS       30000   // minimum OFF time before a restart is allowed
+#define PUMP_MIN_OFF_MS       3000   // minimum OFF time before a restart is allowed
 
 // ---------- Pump timer ----------
 #define TIMER_MINUTE_STEP         1   // minutes per UP/DOWN press (0..59)
