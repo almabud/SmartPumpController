@@ -76,11 +76,16 @@
 #define POWER_V_MAX            260.0f  // sustained over this  -> powerFault
 #define POWER_FAULT_CONFIRM_N       3  // consecutive bad windows before the flag latches
 
-// Prints the raw per-window figures the calibration procedure needs, once a
-// second. Leave it on until ZMPT_CAL_V_PER_V has been measured and the watts
-// have been checked against a plug meter, then set it to 0 — it is noisy enough
-// to bury the other modules' log lines.
-#define POWER_CAL_LOG               1
+// Set to 1 to print the raw per-window figures once a second: pin millivolts,
+// tracked bias, sample count, and the headroom line the trim pot is set by.
+// Turn it back on to run the calibration procedure in docs/wiringe_guide.md —
+// ZMPT_CAL_V_PER_V cannot be measured without it. Off otherwise; it is noisy
+// enough to bury the other modules' log lines.
+//
+// The CLIPPING warning is deliberately NOT behind this flag. A clipped waveform
+// reads low while looking healthy, so it has to be reported whether or not
+// anyone is watching for it.
+#define POWER_CAL_LOG               0
 
 // The usable ADC window. Outside it the converter compresses rather than
 // tracking, so a clipped peak makes the RMS read LOW while looking perfectly
