@@ -285,7 +285,10 @@ void DisplayUI::_drawStatRow(int16_t boxX, int16_t boxW, int16_t y,
 void DisplayUI::_drawPowerStats(SystemState& state) {
     const int16_t X = 46, Y = 52, W = 114, H = 62;
 
-    _sprite.drawRect(X, Y, W, H, TFT_DARKGREY);
+    // Same yellow cue as the timer box. There is no edit mode here, so unlike
+    // the timer the border has only the two states.
+    const bool focused = (_focus == FocusTarget::POWER_STATS);
+    _sprite.drawRect(X, Y, W, H, focused ? TFT_YELLOW : TFT_DARKGREY);
 
     // Title strip in the same grey as the screen's top bar, so the box reads as
     // part of the same furniture rather than a floating panel.

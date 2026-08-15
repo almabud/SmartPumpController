@@ -48,18 +48,29 @@ void DisplayUI::update(SystemState& state, ButtonEvent event) {
 void DisplayUI::_handleNavigation(SystemState& state, ButtonEvent event) {
     if (event == ButtonEvent::NONE || _editing()) return;
 
+    // NONE is part of the cycle rather than an escape from it: walking off the
+    // end of the widgets lands back on an unfocused screen, so a full circuit
+    // always returns to where it started.
+    const uint8_t count = static_cast<uint8_t>(FocusTarget::_COUNT);
+    const uint8_t at    = static_cast<uint8_t>(_focus);
+
     switch (event) {
         case ButtonEvent::DOWN_PRESS:
-            // Walks down the focusable widgets. The timer is the last one, so
-            // stepping past it drops focus — append to FocusTarget to extend.
-            _focus = (_focus == FocusTarget::NONE) ? FocusTarget::PUMP_TIMER
-                                                   : FocusTarget::NONE;
+            // Walks the focusable widgets in FocusTarget order — a new one is
+            // added by appending to the enum, nothing here changes.
+            _focus = static_cast<FocusTarget>((at + 1) % count);
             break;
 
-        // Backing out. UP is the reverse of the walk, LEFT matches how LEFT
-        // backs out of the first field once inside the editor.
         case ButtonEvent::UP_PRESS:
+            // The reverse walk. With more than one widget this has to step back
+            // one rather than drop straight out, or the last widget in the list
+            // is unreachable without cycling all the way round.
+            _focus = static_cast<FocusTarget>((at + count - 1) % count);
+            break;
+
         case ButtonEvent::LEFT_PRESS:
+            // Still the escape hatch, matching how LEFT backs out of the first
+            // field once inside the editor.
             _focus = FocusTarget::NONE;
             break;
 

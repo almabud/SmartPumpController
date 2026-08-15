@@ -14,7 +14,9 @@ enum class ScreenId : uint8_t {
 // focusable widget is added by appending to it.
 enum class FocusTarget : uint8_t {
     NONE,
-    PUMP_TIMER
+    PUMP_TIMER,
+    POWER_STATS,
+    _COUNT          // keep last — the walk in _handleNavigation wraps on it
 };
 
 // Cursor position while the pump timer is being edited. NONE = not editing.

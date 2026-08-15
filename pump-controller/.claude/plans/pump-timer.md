@@ -45,11 +45,17 @@ cursor is what says it is being edited. The split exists so DOWN stays free to
 mean "next widget" as more of the home screen becomes focusable (`FocusTarget`
 in `DisplayUI.h` is that walk order).
 
+The walk is now a real cycle: `NONE → PUMP_TIMER → POWER_STATS → NONE`. `NONE`
+is a position in it rather than an escape from it, so a full circuit returns
+where it started. A new widget is added by appending to `FocusTarget` before
+`_COUNT` — `_handleNavigation` does not change.
+
 | Key | While focused, not editing |
 |---|---|
-| DOWN | next focusable widget; the timer is the last one, so this drops focus |
-| UP / LEFT | drops focus |
-| SELECT | enters edit |
+| DOWN | next focusable widget, wrapping through NONE |
+| UP | previous focusable widget, wrapping. Once there is more than one widget this has to step back rather than drop out, or the last one is unreachable without a full circuit |
+| LEFT | drops focus — the escape hatch |
+| SELECT | enters edit on the timer. Nothing on the stats box: it is focusable so the walk order is settled, but has no detail view until the server-backed history exists |
 | SELECT held 1 s | unchanged pump toggle / timer cancel — focus is only a highlight, so `uiEditing` stays false and InputManager keeps its override |
 
 | Key | While editing |
