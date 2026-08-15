@@ -300,7 +300,7 @@ void DisplayUI::_drawPowerStats(SystemState& state) {
     _sprite.setCursor(X + 4, Y + 3);
     _sprite.print("Last 24h");
 
-    char buf[20];
+    char buf[24];   // longest is the live row: "230V 12.5A 2870W"
 
     // HH:MM:SS rather than HH:MM — it matches the uptime readout below, and a
     // short test run would otherwise round away to 00:00 and look broken.
@@ -323,7 +323,11 @@ void DisplayUI::_drawPowerStats(SystemState& state) {
     // The bottom row swaps with the pump. Live readings only mean anything
     // while it runs; the 24h averages are what you study once it has stopped.
     if (state.pumpState == PumpState::ON) {
-        snprintf(buf, sizeof(buf), "%.1fA  %.0fW", state.current, state.powerWatts);
+        // Volts included because supply health is only interesting under load —
+        // a line that reads fine idle can sag hard the moment the motor pulls,
+        // and that sag is what kills pump windings.
+        snprintf(buf, sizeof(buf), "%.0fV %.1fA %.0fW",
+                 state.voltage, state.current, state.powerWatts);
         _sprite.setTextColor(TFT_GREEN, TFT_BLACK);
     } else {
         snprintf(buf, sizeof(buf), "avg %.1fA pk %.1fA",

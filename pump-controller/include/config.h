@@ -56,22 +56,69 @@
 
 // ---------- Calibration (tune on real hardware) ----------
 #define ACS712_DIVIDER_RATIO   0.686f   // 4.6 / (2.1 + 4.6) — your actual resistors
-#define ACS712_MV_PER_AMP      66.0f
+
+// 100 mV/A is the 20A variant. Measured: a ~750W element on a 202V tap should
+// draw 2.87A, and the 30A figure of 66 mV/A read it as 4.5A — 57% high. The
+// v1 firmware assumed 100 mV/A as well. Confirm against the marking on the
+// chip itself (ACS712ELCTR-05B / -20A / -30A) before trusting this.
+#define ACS712_MV_PER_AMP     100.0f
+
+// The ACS712 measures *directed* current, so which way round it sits in the
+// load loop sets the sign of real power. Wired one way a consuming load reads
+// as generating. -1 corrects it here rather than re-doing mains wiring, which
+// is the more dangerous of the two fixes.
+#define ACS712_DIRECTION         -1
 
 // ---------- Power metering ----------
 // One sample pair per eligible loop pass rather than a blocking burst, so the
 // display never waits on the sampler. 2 kHz gives 40 samples per 50 Hz cycle.
 #define ADC_SAMPLE_INTERVAL_US   500
 #define POWER_WINDOW_MS         1000   // one reported reading per window
+#define MAINS_NOMINAL_HZ        50.0f  // only used to convert the phase constant to samples
+
+// The ZMPT101B delays the voltage waveform relative to reality; the ACS712's
+// Hall sensor does not. Left uncorrected the two channels are misaligned and
+// mean(v*i) reads low by cos(error) on every measurement — a systematic loss
+// that every watt and every kWh inherits.
+//
+// Measured on this board against a purely resistive 68.9 ohm load, where true
+// power factor is 1 by definition: 204.7V x 2.97A = 607.9VA apparent against
+// 544.8W real, so cos = 0.896 and the error is 26.3 degrees.
+//
+// Positive delays the CURRENT channel, negative delays VOLTAGE. Negative here:
+// measured the other way first and pf fell from 0.896 to 0.606, i.e. the error
+// grew by exactly the 26.3 applied, so it is the current channel that arrives
+// late. Most likely the 2.1k/4.6k divider on the ACS712 output forming an RC
+// lag with whatever capacitance sits on that node — the ZMPT feeds its pin
+// directly, with no divider.
+//
+// Retune against a resistive load: correct when reported W equals V x A, i.e.
+// the pf field in the calibration log reads 1.000.
+#define ZMPT_PHASE_CAL_DEG     -26.3f
 
 // The ZMPT101B has a trim pot, so no constant is right until it is measured on
 // this board — see "Calibrating the power sensors" in docs/wiringe_guide.md.
 // Mains volts per volt seen at PIN_VOLTAGE_SENSE.
-#define ZMPT_CAL_V_PER_V       220.0f  // PLACEHOLDER — calibrate before trusting a reading
+// Measured on this board: 230.0V at the wall against 366.7mV RMS at the pin.
+// Large because the module runs on 5V with no divider, so the pin signal is
+// small. Void if the trim pot is touched.
+//
+// Taken with NO load running, which matters more than it looks. Under load the
+// wall socket and the sensor's tap point stop being the same node — current
+// through the wiring between them drops real volts, and metering one while
+// sampling the other bakes that drop into the constant. Calibrated under 750W
+// this came out as 721 and read 14% high once the load was removed.
+#define ZMPT_CAL_V_PER_V       627.0f
 
 // Below the noise floor the ACS712 is only reporting itself; report a clean 0
 // instead of a drifting tenth of an amp with the pump off.
 #define POWER_NOISE_FLOOR_A      0.15f
+
+// Same idea on the voltage channel. ZMPT_CAL_V_PER_V is in the hundreds, so a
+// couple of millivolts of ADC noise on a dead sensor scales up into a volt or
+// two of phantom mains. Anything real is a mains reading; there is nothing
+// legitimate between zero and this, so report a clean 0 below it.
+#define POWER_NOISE_FLOOR_V     30.0f
 #define POWER_V_MIN            180.0f  // sustained under this -> powerFault
 #define POWER_V_MAX            260.0f  // sustained over this  -> powerFault
 #define POWER_FAULT_CONFIRM_N       3  // consecutive bad windows before the flag latches

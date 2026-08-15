@@ -19,6 +19,14 @@ static constexpr float A_PER_PIN_MV = 1.0f / (ACS712_MV_PER_AMP * ACS712_DIVIDER
 // crossings per cycle and report a frequency several times too high.
 static constexpr int32_t ZERO_CROSS_HYST_MV = 50;
 
+// The phase constant expressed as samples of delay. One mains cycle spans
+// (1e6 / MAINS_NOMINAL_HZ) microseconds, and each sample is
+// ADC_SAMPLE_INTERVAL_US of that — 40 samples per cycle at the defaults, so a
+// degree is 0.111 samples. The sign says which channel to hold back.
+static constexpr float PHASE_DELAY_SAMPLES =
+    (ZMPT_PHASE_CAL_DEG / 360.0f)
+    * ((1000000.0f / MAINS_NOMINAL_HZ) / (float)ADC_SAMPLE_INTERVAL_US);
+
 void PowerMeter::begin() {
     analogReadResolution(12);
     analogSetPinAttenuation(PIN_VOLTAGE_SENSE, ADC_11db);
@@ -86,11 +94,29 @@ void PowerMeter::update(SystemState& state) {
         _iOffsetMv += ((float)imv - _iOffsetMv) / 1024.0f;
 
         int32_t acV = vmv - (int32_t)lroundf(_vOffsetMv);
-        int32_t acI = imv - (int32_t)lroundf(_iOffsetMv);
+        // Direction is applied at the sample so it reaches _sumVI, which is the
+        // only accumulator that carries a sign — _sumI2 squares it away, so RMS
+        // current is unaffected either way.
+        int32_t acI = (imv - (int32_t)lroundf(_iOffsetMv)) * ACS712_DIRECTION;
+
+        _vHistory[_histPos] = acV;
+        _iHistory[_histPos] = acI;
+        _histPos = (uint8_t)((_histPos + 1) % PHASE_HIST);
+
+        // Only the cross term needs realigning. The squares are unaffected by a
+        // time shift, so RMS voltage and current stay measurements of the raw
+        // signals rather than of the corrected pair.
+        int32_t vForPower = acV;
+        int32_t iForPower = acI;
+        if (PHASE_DELAY_SAMPLES > 0.0f) {
+            iForPower = _delayed(_iHistory, PHASE_DELAY_SAMPLES);
+        } else if (PHASE_DELAY_SAMPLES < 0.0f) {
+            vForPower = _delayed(_vHistory, -PHASE_DELAY_SAMPLES);
+        }
 
         _sumV2 += (int64_t)acV * acV;
         _sumI2 += (int64_t)acI * acI;
-        _sumVI += (int64_t)acV * acI;
+        _sumVI += (int64_t)vForPower * iForPower;
         _samples++;
 
         if (acV > ZERO_CROSS_HYST_MV && !_vAboveZero) {
@@ -116,6 +142,19 @@ void PowerMeter::update(SystemState& state) {
     }
 }
 
+int32_t PowerMeter::_delayed(const int32_t* history, float samples) const {
+    uint8_t whole = (uint8_t)samples;
+    float   frac  = samples - (float)whole;
+
+    // _histPos has already advanced past the newest entry, so the sample taken
+    // this pass sits at _histPos - 1 and the delay counts back from there.
+    uint8_t newer = (uint8_t)((_histPos + PHASE_HIST - 1 - whole) % PHASE_HIST);
+    uint8_t older = (uint8_t)((_histPos + PHASE_HIST - 2 - whole) % PHASE_HIST);
+
+    return (int32_t)lroundf((float)history[newer] * (1.0f - frac)
+                          + (float)history[older] * frac);
+}
+
 void PowerMeter::_publish(SystemState& state, uint32_t windowMs) {
     if (_samples == 0 || windowMs == 0) return;
 
@@ -135,6 +174,14 @@ void PowerMeter::_publish(SystemState& state, uint32_t windowMs) {
     // figure. A pump motor runs at a power factor around 0.7-0.85, and the
     // apparent-power shortcut would overstate it by that much.
     float watts = meanVI * V_PER_PIN_MV * A_PER_PIN_MV;
+
+    // With no mains on the ZMPT the pin still carries a millivolt or two of ADC
+    // noise, and V_PER_PIN_MV scales that into a volt or so of phantom mains.
+    // Nothing downstream can tell that from a real reading, so clamp it here.
+    if (volts < POWER_NOISE_FLOOR_V) {
+        volts = 0.0f;
+        watts = 0.0f;
+    }
 
     // Below the noise floor the ACS712 is only reporting itself. Zero the power
     // along with the current: otherwise noise multiplied by a live mains
@@ -177,9 +224,14 @@ void PowerMeter::_publish(SystemState& state, uint32_t windowMs) {
     // n is the sample count for the window: it is the first thing to check on
     // real hardware, because every figure on this line is only as good as the
     // rate that produced it.
-    Serial.printf("[PowerMeter] %6.1fV %5.2fA %6.1fW %4.1fHz | "
+    // pf is what the phase constant is tuned against: on a resistive load it
+    // must read 1.000, and whatever it falls short by is the residual error.
+    float apparent = volts * amps;
+    float pf       = (apparent > 1.0f) ? (watts / apparent) : 0.0f;
+
+    Serial.printf("[PowerMeter] %6.1fV %5.2fA %6.1fW %4.1fHz pf %5.3f | "
                   "pin %6.1f/%6.1fmV bias %6.0f/%6.0fmV n=%lu\n",
-                  volts, amps, watts, hz,
+                  volts, amps, watts, hz, pf,
                   vRmsPinMv, iRmsPinMv, _vOffsetMv, _iOffsetMv,
                   (unsigned long)_samples);
 

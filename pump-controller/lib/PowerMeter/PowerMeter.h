@@ -48,6 +48,14 @@ private:
     uint32_t _vClipped = 0, _iClipped = 0;
     uint32_t _lastClipWarnMs = 0;
 
+    // Recent samples of both channels, so one can be replayed a fraction of a
+    // cycle late to cancel the sensors' phase mismatch. Sized well beyond the
+    // ~3 samples this board needs, so retuning never has to touch it.
+    static constexpr uint8_t PHASE_HIST = 16;
+    int32_t _vHistory[PHASE_HIST] = {};
+    int32_t _iHistory[PHASE_HIST] = {};
+    uint8_t _histPos = 0;
+
     uint32_t _lastSampleUs = 0;
     uint32_t _lastWindowMs = 0;
 
@@ -57,4 +65,7 @@ private:
 
     void _publish(SystemState& state, uint32_t windowMs);
     void _resetWindow();
+    // Reads `samples` back into one of the histories, interpolating between the
+    // two entries the fractional delay falls between.
+    int32_t _delayed(const int32_t* history, float samples) const;
 };
