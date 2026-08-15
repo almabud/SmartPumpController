@@ -143,28 +143,66 @@ ACS712 OUT ──[2.1kΩ]──┬── GPIO4
 #define PIN_CURRENT_SENSE      4
 #define ACS712_DIVIDER_RATIO   0.686f   // 4.6/(2.1+4.6)
 #define ACS712_MV_PER_AMP      66.0f    // 30A variant
+#define POWER_NOISE_FLOOR_A    0.15f    // below this, report a clean 0
 ```
+
+After the divider the part gives `66 × 0.686 = 45.3 mV` per amp at the pin, so a
+12-bit ADC over the 0–3.3 V range resolves roughly 56 counts per amp. Fine for
+pump-scale currents, useless for anything under a few hundred milliamps — hence
+the noise floor. See "Calibrating the power sensors" below.
 
 ---
 
 ## 5. Voltage Sensor (ZMPT101B)
 
-**Note:** Power from 3.3V so output naturally stays within ADC range. No voltage divider needed.
+**Note:** Powered from 5V, no divider. The trim pot is what keeps the output
+inside the ADC's range — see the headroom warning below.
 
 | Module Pin | Connects to | Notes |
 |------------|-------------|-------|
-| VCC | 3.3V | NOT 5V — keeps output within ADC range |
+| VCC | 5V | Biases the output near 2350mV — the pot must compensate |
 | GND | GND | |
 | OUT | GPIO5 | Direct connection, no divider |
 | AC Terminal 1 | Live (mains) | Parallel connection — wire last |
 | AC Terminal 2 | Neutral (mains) | Parallel connection — wire last |
 
-**Important:** tune the onboard potentiometer so the AC waveform peak stays just under 3.3V on GPIO5 before trusting any voltage readings in firmware.
+**Asymmetric headroom — this is the thing to watch.** On 5V the module idles at
+roughly `2350 mV` (measured on this board), while the ADC's usable ceiling is
+about `3000 mV`. That leaves only **~650 mV of room above the bias** against
+~2250 mV below it, so the positive half-cycle is what hits the limit first.
 
-**config.h pin:**
+Set the trim pot so the peak stays inside that 650 mV. Anything beyond it is
+clipped by the ADC, and **clipping is silent**: the waveform is flattened, the
+RMS reads low, and nothing about the number looks wrong. Calibrating against a
+clipped reading bakes the error in permanently.
+
+The firmware watches for this. With `POWER_CAL_LOG` on it prints a `range` line
+each second giving the raw min/max and the remaining headroom, and it prints a
+`CLIPPING` warning — regardless of `POWER_CAL_LOG` — whenever samples land
+outside `ADC_CLIP_LOW_MV .. ADC_CLIP_HIGH_MV`. Tune the pot by watching `head`
+rather than by guessing; leave a few hundred mV of margin so mains fluctuation
+does not push it over.
+
+Resolution is not a concern at this bias: ~650 mV of usable swing is about 800
+ADC counts of peak, which resolves 230 V mains to well under a volt.
+
+> If you would rather have symmetric headroom, the alternatives are to add the
+> same 2.1k/4.6k divider used on the ACS712 (bias drops to ~1610 mV, needs no
+> firmware change since `ZMPT_CAL_V_PER_V` is measured end-to-end), or to move
+> VCC to 3.3V (bias ~1650 mV — but check the op-amp marking first; an LM358 is
+> not rail-to-rail and its swing gets cramped on a 3.3V single supply).
+
+**config.h pin and calibration:**
 ```cpp
 #define PIN_VOLTAGE_SENSE   5
+#define ZMPT_CAL_V_PER_V    220.0f   // PLACEHOLDER — must be measured, see below
 ```
+
+`ZMPT_CAL_V_PER_V` is mains volts per volt seen at GPIO5. Because the trim pot
+sets the module's gain, **no shipped default can be correct** — the value is a
+property of how far that pot happens to be turned on this particular board.
+Every voltage, watt and kWh figure the firmware produces is wrong until it is
+measured. See "Calibrating the power sensors" below.
 
 ---
 
@@ -358,6 +396,98 @@ Wall socket
 
 **Always add a fuse** on the Live line rated for your pump's current (typically 5–10A).
 **Never probe mains with board powered.** Mains work only with wall plug removed.
+
+---
+
+## Calibrating the power sensors
+
+Both sensors ship uncalibrated and the firmware cannot guess either constant.
+Work through this in order — each step depends on the one before it being right.
+
+**Safety.** The ZMPT101B AC terminals and the ACS712 IP+/IP- pads sit at mains
+potential. Do not touch either while the wall plug is in. Do not connect the
+ESP32's USB to a non-isolated laptop while mains is live on the sensor board —
+use a USB isolator, a phone charger with the serial log read over the display,
+or pull the plug before touching the board.
+
+Set `POWER_CAL_LOG 1` in `config.h` and flash. `[PowerMeter]` prints one line a
+second:
+
+```
+[PowerMeter]  231.4V  4.62A  912.3W 50.0Hz | pin  460.0/ 209.4mV bias 2348/1715mV n=1962
+[PowerMeter]   range V 1888..2808mV (head 192mV)  I 1506..1924mV (head 1076mV)
+```
+
+### Step 1 — sample rate (`n`)
+
+Check this first; every other number on the line is only as good as the rate
+that produced it. `n` should be close to `1000000 / ADC_SAMPLE_INTERVAL_US`,
+i.e. **~2000** at the default 500 µs.
+
+If it is materially lower, `analogReadMilliVolts()` is too slow on this build.
+Either raise `ADC_SAMPLE_INTERVAL_US` to match what the loop actually sustains,
+or switch `PowerMeter.cpp` to plain `analogRead()` with a linear mV conversion.
+Anything at or above ~1000 still gives 20 samples per 50 Hz cycle, which is
+enough for a stable RMS. Do not proceed until `n` is stable.
+
+### Step 2 — set the trim pot, then measure `ZMPT_CAL_V_PER_V`
+
+**Order matters: pot first, constant second.** The constant describes where the
+pot is, so touching the pot afterwards voids it.
+
+With mains live and no load running, watch the `range` line's voltage `head`
+figure. Turn the trim pot until:
+
+- no `CLIPPING` warning appears, and
+- `head` settles somewhere around **200-400 mV**
+
+Do not chase a larger signal by squeezing `head` toward zero — mains fluctuates,
+and a peak that just fits today clips on the next surge. Do not leave it near
+the full ~650 mV either; you are throwing away resolution for no benefit.
+
+Then take `pin` (the first of the two figures, mV RMS) off the log line and
+read true supply voltage off a multimeter:
+
+```
+ZMPT_CAL_V_PER_V = measured_volts / (pin_mV / 1000)
+```
+
+A meter reading 231.4 V against a logged `460.0 mV` gives
+`231.4 / 0.460 = 503.0`. Set the constant, reflash, and confirm the reported
+voltage tracks the meter within a volt or two.
+
+Expect a value in the hundreds on this board — the 5V-supplied module with no
+divider produces a small pin signal, so the constant that scales it back up is
+correspondingly large. That is normal, not a sign of an error.
+
+### Step 3 — current and power (`ACS712_MV_PER_AMP`)
+
+Run a **resistive** load — a kettle or a heat gun, not the pump. Resistive means
+power factor ≈ 1, so watts should equal volts × amps, which is what makes it
+usable as a reference. Compare the reported watts against a plug-in energy
+meter.
+
+If they disagree by a consistent ratio, scale `ACS712_MV_PER_AMP` by it; the
+nominal 66 mV/A is a datasheet typical and real parts vary. If current reads a
+drifting non-zero with everything switched off, raise `POWER_NOISE_FLOOR_A`
+until it reports a clean 0.
+
+### Step 4 — power factor, against the pump
+
+Now run the pump. Reported watts must land **noticeably below** volts × amps —
+an induction motor's power factor is around 0.7–0.85, and that gap is the whole
+reason the firmware integrates `mean(v×i)` instead of multiplying the two RMS
+figures.
+
+If watts equals volts × amps on the pump, the real-power path is broken. Fix it
+before going any further: energy accumulation integrates this number, so the
+error would be baked into every kWh total from then on.
+
+### Step 5 — turn the log off
+
+Set `POWER_CAL_LOG 0` and reflash. Record the constants you landed on in the
+commit message — they are board-specific and there is no way to recover them
+except by repeating this procedure.
 
 ---
 

@@ -76,6 +76,23 @@
 #define POWER_V_MAX            260.0f  // sustained over this  -> powerFault
 #define POWER_FAULT_CONFIRM_N       3  // consecutive bad windows before the flag latches
 
+// Prints the raw per-window figures the calibration procedure needs, once a
+// second. Leave it on until ZMPT_CAL_V_PER_V has been measured and the watts
+// have been checked against a plug meter, then set it to 0 — it is noisy enough
+// to bury the other modules' log lines.
+#define POWER_CAL_LOG               1
+
+// The usable ADC window. Outside it the converter compresses rather than
+// tracking, so a clipped peak makes the RMS read LOW while looking perfectly
+// healthy — the one failure mode that silently corrupts a calibration.
+//
+// This matters most on the voltage channel: the ZMPT101B here runs on 5V with
+// no divider, so its output biases near 2350mV and only has ~650mV of room
+// above before it hits the ceiling. The trim pot is what keeps it inside.
+#define ADC_CLIP_HIGH_MV         3000
+#define ADC_CLIP_LOW_MV           100
+#define POWER_CLIP_WARN_MS       5000   // rate limit for the clipping warning
+
 // ---------- 24h stats ----------
 // Bucket period. Drop to 60000 to make an "hour" one minute and roll the whole
 // 24-slot ring in 24 minutes while testing.
@@ -126,6 +143,6 @@
 
 // ---------- Boot screen ----------
 #define FIRMWARE_VERSION     "v2.0"
-#define BOOT_TOTAL_STEPS         4   // Display, Inputs, Radio, Ready — bump as modules land
+#define BOOT_TOTAL_STEPS         5   // Display, Inputs, Radio, Power, Ready — bump as modules land
 #define BOOT_STEP_MIN_MS       500   // per-step dwell so the progress bar visibly fills
 #define BOOT_HOLD_MS           500   // extra hold on the completed bar before the home screen

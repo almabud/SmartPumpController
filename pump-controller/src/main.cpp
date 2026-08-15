@@ -5,6 +5,7 @@
 #include "SystemState.h"
 #include "DisplayUI.h"
 #include "InputManager.h"
+#include "PowerMeter.h"
 #include "PumpDriver.h"
 #include "PumpTimer.h"
 #include "RadioReceiver.h"
@@ -17,6 +18,7 @@ SystemState  state;
 DisplayUI     displayUI;
 InputManager  inputManager;
 RadioReceiver radioReceiver;
+PowerMeter   powerMeter;
 PumpDriver   pumpDriver;
 PumpTimer    pumpTimer;
 SceneEngine  sceneEngine;
@@ -47,6 +49,9 @@ void setup() {
     radioReceiver.begin();
     displayUI.showBoot(3, BOOT_TOTAL_STEPS, "Starting radio...");
 
+    powerMeter.begin();
+    displayUI.showBoot(4, BOOT_TOTAL_STEPS, "Starting power...");
+
     displayUI.showBoot(BOOT_TOTAL_STEPS, BOOT_TOTAL_STEPS, "Ready");
     delay(BOOT_HOLD_MS);   // let the completed bar register before the home screen
 
@@ -59,6 +64,7 @@ void loop() {
     // Every iteration — time sensitive
     inputManager.update(state);
     radioReceiver.update(state); // 433 packets -> tank fields
+    powerMeter.update(state);    // ADC samples -> V / A / W / Hz
     pumpTimer.update(state);     // countdown -> request
     sceneEngine.update(state);   // request  -> desired action
     pumpDriver.update(state);    // desired action -> relay + pumpState
