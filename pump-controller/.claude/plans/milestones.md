@@ -88,9 +88,21 @@ end to end.
 **Goal:** the system reads real power data, makes pump decisions based on tank level,
 and drives the relay safely. The core control loop is fully operational.
 
+> **Progress.** The power-sensing half is largely built — see
+> [`power-monitor.md`](./power-monitor.md) and
+> [`power-monitor-steps.md`](./power-monitor-steps.md). Shipped: ADC sampling and
+> RMS, a rolling 24h stats window persisted to NVS, and a focusable stats box on
+> the home screen. Outstanding: the mains-side calibration of
+> `ZMPT_CAL_V_PER_V` (nothing measured is trustworthy until it is done), then
+> kWh accumulation and `powerFault`. The `SceneEngine` and `PumpDriver`
+> deliverables below are untouched.
+
 **Deliverables:**
 - `PowerMeter` — ADC sampling for ZMPT101B (voltage) and ACS712 (current), RMS
   calculation, kWh accumulation, power fault detection
+  — *sampling and RMS done; kWh and fault detection outstanding. Power is
+  computed as `mean(v*i)` rather than `Vrms*Irms`, since a pump motor's power
+  factor of ~0.7-0.85 would otherwise overstate every figure.*
 - `SceneEngine` — hysteresis-based pump decision logic:
   - AUTO mode: pump ON when `tankLevel < TANK_LEVEL_LOW_PCT`,
     pump OFF when `tankLevel > TANK_LEVEL_HIGH_PCT`
@@ -101,8 +113,13 @@ and drives the relay safely. The core control loop is fully operational.
   - `PUMP_MAX_RUN_MS` enforced as maximum continuous runtime
   - Refuses ON if `state.tankStale == true`
   - Refuses ON if `state.powerFault == true`
+    — *deliberately deferred. Shipping this alongside brand-new, uncalibrated
+    sensor math means one bad voltage reading refuses to run the pump. It lands
+    once the readings are trusted on hardware.*
   - Safety rules apply in BOTH AUTO and MANUAL mode — no bypass
 - Display home screen shows live V / A / W / kWh readings
+  — *done, as the "Last 24h" box: runtime, cycles and kWh, with the bottom row
+  swapping to live amps/watts while the pump runs.*
 - Manual override tested and confirmed: buttons can force pump on/off,
   safety rules still apply
 

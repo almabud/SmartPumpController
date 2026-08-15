@@ -1,6 +1,14 @@
 # Power monitor — staged execution
 
-> Status: **planned** — no stage started.
+> Status: **in progress** — stages 1, 4, 5, 6, 7 shipped (`6bb14aa`..`2c0d14b`).
+> Stage 2 is shipped but **not signed off**: the sampler is on hardware and
+> bench-verified, but `ZMPT_CAL_V_PER_V` is still the placeholder, so voltage and
+> watts are not yet real numbers. Stage 3 is **not started** and is gated on that
+> calibration, since it integrates watts into kWh.
+>
+> Outstanding, both needing mains live on the ZMPT: steps 2c-2e of the
+> calibration procedure, then stage 3.
+>
 > Design, rationale and the decision log live in [`power-monitor.md`](./power-monitor.md).
 > This file is the execution track only; it does not restate *why*.
 

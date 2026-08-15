@@ -1,6 +1,8 @@
 # Power monitor — sensing, 24h rolling stats, home UI box
 
-> Status: **planned** — not started.
+> Status: **in progress** — sensing, the 24h ring, NVS persistence and the home
+> screen box are all shipped and on hardware. Still open: the mains-side sensor
+> calibration, and the energy/fault stage that depends on it.
 > Execution is broken into 7 staged steps in
 > [`power-monitor-steps.md`](./power-monitor-steps.md). This file holds the design and the
 > decision log; that one holds the order of work and the per-stage verification.
