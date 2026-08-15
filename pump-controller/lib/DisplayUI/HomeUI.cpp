@@ -267,6 +267,70 @@ void DisplayUI::_drawPumpTimer(SystemState& state) {
     x = _drawTimerNum(x, y, runM, TimerField::RUN_MM, "MM", labels);
 }
 
+void DisplayUI::_drawStatRow(int16_t boxX, int16_t boxW, int16_t y,
+                             const char* label, const char* value, uint16_t valueColor) {
+    const int16_t PAD = 4;
+
+    // The label is dim and the value bright: at this size the eye should land
+    // on the number, not on the word telling it which number it is.
+    _sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    _sprite.setCursor(boxX + PAD, y);
+    _sprite.print(label);
+
+    _sprite.setTextColor(valueColor, TFT_BLACK);
+    _sprite.setCursor(boxX + boxW - PAD - _sprite.textWidth(value), y);
+    _sprite.print(value);
+}
+
+void DisplayUI::_drawPowerStats(SystemState& state) {
+    const int16_t X = 46, Y = 52, W = 114, H = 62;
+
+    _sprite.drawRect(X, Y, W, H, TFT_DARKGREY);
+
+    // Title strip in the same grey as the screen's top bar, so the box reads as
+    // part of the same furniture rather than a floating panel.
+    _sprite.fillRect(X + 1, Y + 1, W - 2, 11, 0x2945);
+
+    _sprite.setTextFont(1);
+    _sprite.setTextSize(1);
+    _sprite.setTextColor(TFT_WHITE, 0x2945);
+    _sprite.setCursor(X + 4, Y + 3);
+    _sprite.print("Last 24h");
+
+    char buf[20];
+
+    // HH:MM:SS rather than HH:MM — it matches the uptime readout below, and a
+    // short test run would otherwise round away to 00:00 and look broken.
+    uint32_t secs = state.stats24hRuntimeSec;
+    snprintf(buf, sizeof(buf), "%02lu:%02lu:%02lu",
+             (unsigned long)(secs / 3600),
+             (unsigned long)((secs % 3600) / 60),
+             (unsigned long)(secs % 60));
+    _drawStatRow(X, W, Y + 15, "Run", buf, TFT_WHITE);
+
+    snprintf(buf, sizeof(buf), "%u", state.stats24hCycles);
+    _drawStatRow(X, W, Y + 27, "Cyc", buf, TFT_WHITE);
+
+    // This box is the only place power health is visible now that the old
+    // full-width fault banner would collide with it, so the fault has to show
+    // here or nowhere.
+    snprintf(buf, sizeof(buf), "%.3f", state.stats24hEnergyKwh);
+    _drawStatRow(X, W, Y + 39, "kWh", buf, state.powerFault ? TFT_RED : TFT_WHITE);
+
+    // The bottom row swaps with the pump. Live readings only mean anything
+    // while it runs; the 24h averages are what you study once it has stopped.
+    if (state.pumpState == PumpState::ON) {
+        snprintf(buf, sizeof(buf), "%.1fA  %.0fW", state.current, state.powerWatts);
+        _sprite.setTextColor(TFT_GREEN, TFT_BLACK);
+    } else {
+        snprintf(buf, sizeof(buf), "avg %.1fA pk %.1fA",
+                 state.stats24hAvgCurrent, state.stats24hPeakCurrent);
+        _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    }
+    _sprite.setCursor(X + 4, Y + 51);
+    _sprite.print(buf);
+}
+
 void DisplayUI::_drawHome(SystemState& state) {
     _sprite.fillSprite(TFT_BLACK);
 
@@ -280,6 +344,8 @@ void DisplayUI::_drawHome(SystemState& state) {
     _drawPumpState(state);
     // --- Pump timer ---
     _drawPumpTimer(state);
+    // --- Rolling 24h power stats ---
+    _drawPowerStats(state);
 
     // --- Pump state ---
     // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -300,35 +366,6 @@ void DisplayUI::_drawHome(SystemState& state) {
     // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
     // _sprite.print(state.mode == OperatingMode::AUTO ? "AUTO" : "MAN");
 
-
-    // --- Power readings ---
-    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    // _sprite.setCursor(4, 62);
-    // _sprite.print("V:");
-    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    // _sprite.print(state.voltage, 1);
-    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    // _sprite.print("  A:");
-    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    // _sprite.print(state.current, 2);
-
-    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    // _sprite.setCursor(4, 75);
-    // _sprite.print("W:");
-    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    // _sprite.print(state.powerWatts, 1);
-    // _sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    // _sprite.print("  kWh:");
-    // _sprite.setTextColor(TFT_YELLOW, TFT_BLACK);
-    // _sprite.print(state.energyKwh, 3);
-
-    // --- Fault banner ---
-    // if (state.pumpFault || state.powerFault) {
-    //     _sprite.fillRect(0, 108, 160, 20, TFT_RED);
-    //     _sprite.setTextColor(TFT_WHITE, TFT_RED);
-    //     _sprite.setCursor(20, 114);
-    //     _sprite.print("!! FAULT DETECTED !!");
-    // }
 
     // --- Uptime (bottom right) ---
     _sprite.setTextFont(1);

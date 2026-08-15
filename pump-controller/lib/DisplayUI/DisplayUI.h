@@ -98,6 +98,12 @@ private:
     void _drawPumpState(SystemState& state);
     // Timer drawing
     void _drawPumpTimer(SystemState& state);
+    // Rolling 24h power stats box
+    void _drawPowerStats(SystemState& state);
+    // Label hard left, value hard right, inside a box. The caller sets the
+    // font first, as with the timer helpers below.
+    void _drawStatRow(int16_t boxX, int16_t boxW, int16_t y,
+                      const char* label, const char* value, uint16_t valueColor);
     // Draws a zero-padded 2-digit field — or `label` when the field is still
     // unset — blinking it while it holds the cursor. Returns the x to continue
     // drawing at. The caller sets the font first.
