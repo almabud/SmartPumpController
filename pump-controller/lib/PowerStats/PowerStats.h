@@ -27,7 +27,10 @@ struct HourBucket {
 // arrives and real timestamps become available.
 class PowerStats {
 public:
-    void begin();
+    // Takes the state because begin() restores the saved lifetime energy
+    // counter into it, and publishes the reloaded totals so the first frame
+    // drawn after a reboot already shows real numbers.
+    void begin(SystemState& state);
     void update(SystemState& state);
 
 private:
@@ -44,6 +47,13 @@ private:
     uint32_t _hourAccumMs = 0;
     uint32_t _lastLogMs   = 0;
 
+    // Written only when something actually changed. For a pump that means only
+    // while it runs, so idle hours cost no flash writes at all — the difference
+    // between a handful of writes a day and an unconditional 144.
+    bool     _dirty       = false;
+    uint32_t _lastFlushMs = 0;
+    uint32_t _writeCount  = 0;   // reported in the totals log, so wear is observed not assumed
+
     // Energy arrives as a rate, so the sub-milliwatt-hour remainder is carried
     // between ticks rather than truncated away once a second — at low power
     // that rounding would otherwise swallow the whole reading.
@@ -53,4 +63,7 @@ private:
     void _advanceBucket();
     void _recomputeTotals(SystemState& state);
     void _logTotals(const SystemState& state) const;
+
+    void _load(SystemState& state);
+    void _save(const SystemState& state);
 };

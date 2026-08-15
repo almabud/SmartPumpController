@@ -54,7 +54,7 @@ void setup() {
     powerMeter.begin();
     displayUI.showBoot(4, BOOT_TOTAL_STEPS, "Starting power...");
 
-    powerStats.begin();
+    powerStats.begin(state);
     displayUI.showBoot(5, BOOT_TOTAL_STEPS, "Starting stats...");
 
     displayUI.showBoot(BOOT_TOTAL_STEPS, BOOT_TOTAL_STEPS, "Ready");
