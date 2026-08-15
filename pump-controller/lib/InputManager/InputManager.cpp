@@ -19,6 +19,26 @@ static const ButtonEvent SHORT_EVENTS[] = {
     ButtonEvent::DOWN_PRESS
 };
 
+// How long each button must be held to count as a long press, same order.
+// 0 means the button has no long press at all.
+static const uint32_t LONG_MS[] = {
+    BUTTON_BACK_HOLD_MS,    // LEFT   — back to the home screen
+    0,                      // UP
+    BUTTON_LONG_PRESS_MS,   // SELECT — pump toggle / timer cancel
+    0,                      // RIGHT
+    0                       // DOWN
+};
+
+// Long-press event per button, same order. Only meaningful where LONG_MS is
+// non-zero, so the unused slots are NONE rather than a placeholder event.
+static const ButtonEvent LONG_EVENTS[] = {
+    ButtonEvent::LEFT_LONG_PRESS,
+    ButtonEvent::NONE,
+    ButtonEvent::SELECT_LONG_PRESS,
+    ButtonEvent::NONE,
+    ButtonEvent::NONE
+};
+
 void InputManager::begin() {
     for (uint8_t i = 0; i < BTN_COUNT; i++) {
         pinMode(PINS[i], INPUT_PULLUP);
@@ -57,14 +77,17 @@ void InputManager::update(SystemState& state) {
             }
         }
 
-        // Held long enough — fire once, mid-hold.
-        if (b.stable == LOW && !b.longFired &&
-            (now - b.pressStartMs) >= BUTTON_LONG_PRESS_MS) {
+        // Held long enough — fire once, mid-hold. Buttons with no long press
+        // are skipped entirely, so their hold never suppresses the short press
+        // that fires on release.
+        if (LONG_MS[i] != 0 && b.stable == LOW && !b.longFired &&
+            (now - b.pressStartMs) >= LONG_MS[i]) {
             b.longFired = true;
+            _lastEvent  = LONG_EVENTS[i];
 
+            // The event itself is enough for every button but SELECT, which
+            // also reaches past the UI to the pump.
             if (i == BTN_SELECT) {
-                _lastEvent = ButtonEvent::SELECT_LONG_PRESS;
-
                 if (state.uiEditing) {
                     // The edit UI owns the buttons — it uses the long press to
                     // back out, and must not disturb whatever is running.

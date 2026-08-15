@@ -10,7 +10,8 @@ enum class ButtonEvent : uint8_t {
     UP_PRESS,
     DOWN_PRESS,
     SELECT_PRESS,       // OK / confirm
-    SELECT_LONG_PRESS   // held for BUTTON_LONG_PRESS_MS — toggles the pump
+    SELECT_LONG_PRESS,  // held for BUTTON_LONG_PRESS_MS — toggles the pump
+    LEFT_LONG_PRESS     // held for BUTTON_BACK_HOLD_MS — jumps back to home
 };
 
 class InputManager {

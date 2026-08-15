@@ -3,6 +3,7 @@
 #include "config.h"
 
 #include "SystemState.h"
+#include "ConfigStore.h"
 #include "DisplayUI.h"
 #include "InputManager.h"
 #include "PowerMeter.h"
@@ -18,6 +19,7 @@ SystemState  state;
 // ---- Module instances ----------------------------------------------------
 DisplayUI     displayUI;
 InputManager  inputManager;
+ConfigStore   configStore;
 RadioReceiver radioReceiver;
 PowerMeter   powerMeter;
 PowerStats   powerStats;
@@ -48,14 +50,19 @@ void setup() {
     inputManager.begin();
     displayUI.showBoot(2, BOOT_TOTAL_STEPS, "Starting inputs...");
 
+    // Before the radio: it converts every packet through the tank calibration,
+    // so the saved values have to be in place before the first one lands.
+    configStore.begin(state);
+    displayUI.showBoot(3, BOOT_TOTAL_STEPS, "Loading config...");
+
     radioReceiver.begin();
-    displayUI.showBoot(3, BOOT_TOTAL_STEPS, "Starting radio...");
+    displayUI.showBoot(4, BOOT_TOTAL_STEPS, "Starting radio...");
 
     powerMeter.begin();
-    displayUI.showBoot(4, BOOT_TOTAL_STEPS, "Starting power...");
+    displayUI.showBoot(5, BOOT_TOTAL_STEPS, "Starting power...");
 
     powerStats.begin(state);
-    displayUI.showBoot(5, BOOT_TOTAL_STEPS, "Starting stats...");
+    displayUI.showBoot(6, BOOT_TOTAL_STEPS, "Starting stats...");
 
     displayUI.showBoot(BOOT_TOTAL_STEPS, BOOT_TOTAL_STEPS, "Ready");
     delay(BOOT_HOLD_MS);   // let the completed bar register before the home screen
@@ -85,6 +92,10 @@ void loop() {
         displayUI.update(state, ButtonEvent::NONE);
         lastDisplayMs = now;
     }
+
+    // After the display, so a setting committed on this pass is persisted on
+    // the same one rather than waiting for the next.
+    configStore.update(state);
 
     // Uptime counter — increment every second
     if (now - lastUptimeMs >= 1000) {

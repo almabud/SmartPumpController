@@ -164,9 +164,16 @@
 // ---------- Tank calibration (placeholders — measure on site) ----------
 // The distances the sensor reports at the two extremes. Read them off the
 // [RadioReceiver] log line with the tank full and then empty. These are only
-// the power-on defaults; they become user-editable from the config page.
+// the power-on defaults — ConfigStore loads whatever the config page last saved
+// over them, so measuring on site no longer needs a reflash.
 #define TANK_DISTANCE_FULL_MM    300   // TODO reading when the tank is FULL
 #define TANK_DISTANCE_EMPTY_MM  1500   // TODO reading when the tank is EMPTY
+
+// What the config page will accept, and what a restored NVS value is checked
+// against. Both come from the sensor rather than from the tank: the AJSR04M has
+// a blind zone below 20cm and is rated to 4.5m — see water_tank/include/config.h.
+#define TANK_MIN_MM              200
+#define TANK_MAX_MM             4500
 
 #define TANK_STALE_TIMEOUT_MS  10000   // 5 missed packets at the node's 2s send interval
 
@@ -182,6 +189,10 @@
 // ---------- Input timing ----------
 #define BUTTON_DEBOUNCE_MS       30
 #define BUTTON_LONG_PRESS_MS   1000   // hold SELECT this long to toggle the pump
+
+// LEFT is "back one level" on a short press, so the hold that jumps all the way
+// home has to be clearly longer than a press that overshot — hence 2s, not 1s.
+#define BUTTON_BACK_HOLD_MS    2000   // hold LEFT this long to return to the home screen
 
 // A widget left focused or an edit left half-finished backs out on its own, so
 // the display never sits waiting on a user who walked away. Editing gets the
@@ -201,8 +212,11 @@
 #define TIMER_MINUTE_STEP         1   // minutes per UP/DOWN press (0..59)
 #define TIMER_MAX_HOURS          23   // hour field wraps 0..23
 
+// ---------- Config store ----------
+#define CFG_NVS_VER               1   // bump to discard saved settings after a schema change
+
 // ---------- Boot screen ----------
 #define FIRMWARE_VERSION     "v2.0"
-#define BOOT_TOTAL_STEPS         6   // Display, Inputs, Radio, Power, Stats, Ready — bump as modules land
+#define BOOT_TOTAL_STEPS         7   // Display, Inputs, Config, Radio, Power, Stats, Ready — bump as modules land
 #define BOOT_STEP_MIN_MS       500   // per-step dwell so the progress bar visibly fills
 #define BOOT_HOLD_MS           500   // extra hold on the completed bar before the home screen

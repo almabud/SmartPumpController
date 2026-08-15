@@ -5,8 +5,13 @@
 #include "../InputManager/InputManager.h"
 
 
+// Screens form a left/right strip with HOME at position 0. LEFT is always back
+// one level and RIGHT always forward one, so a new page is added by appending
+// here and giving it a case in the draw switch and the event routing.
 enum class ScreenId : uint8_t {
-    HOME
+    HOME,
+    CONFIG,         // the settings list
+    CONFIG_ITEM     // the editor for the row selected on CONFIG
 };
 
 // Which home-screen widget currently holds the buttons. Focus is a step short of
@@ -18,6 +23,35 @@ enum class FocusTarget : uint8_t {
     POWER_STATS,
     _COUNT          // keep last — the walk in _handleNavigation wraps on it
 };
+
+// The settings on the config page, in the order the list shows them. Adding one
+// is this enum plus a row in CONFIG_DEFS (ConfigUI.cpp) — the list walk and the
+// editor routing both work off the table.
+enum class ConfigItem : uint8_t {
+    TANK_FULL,
+    TANK_EMPTY,
+    BYPASS,
+    _COUNT          // keep last — the list walk wraps on it
+};
+
+// How a setting is edited. METRES is a millimetre value shown as M.MMM and
+// edited a digit at a time; BOOL is an on/off toggle.
+enum class ConfigKind : uint8_t {
+    METRES,
+    BOOL
+};
+
+struct ConfigDef {
+    const char* rowLabel;    // "Tank Full" — as it reads in the list
+    const char* pageTitle;   // "TANK FULL" — as it reads in the editor title bar
+    ConfigKind  kind;
+};
+
+// Defined in ConfigUI.cpp alongside the drawing that uses it.
+const ConfigDef& configDef(uint8_t item);
+
+// Number of editable digits in a METRES value: M.MMM, cursor 0 is the metres.
+#define CFG_DIGITS 4
 
 // Cursor position while the pump timer is being edited. NONE = not editing.
 enum class TimerField : uint8_t {
@@ -56,6 +90,13 @@ private:
     uint8_t    _editBrkH   = 0, _editBrkM   = 0;
     uint8_t    _editRunH   = 0, _editRunM   = 0;
 
+    // ---- Config page ----
+    uint8_t  _cfgSel      = 0;      // selected row, and the item CONFIG_ITEM edits
+    uint8_t  _cfgDigit    = 0;      // cursor on a METRES editor, 0 = the metres digit
+    bool     _cfgBlinkOn  = true;
+    uint16_t _cfgEditMm   = 0;      // working copies — state is written on commit only
+    bool     _cfgEditBool = false;
+
     void _handleTimerEdit(SystemState& state, ButtonEvent event);
     void _beginTimerEdit(SystemState& state);
     void _commitTimer(SystemState& state);
@@ -77,15 +118,39 @@ private:
     }
 
     void _handleNavigation(SystemState& state, ButtonEvent event);
+    void _handleConfigList(SystemState& state, ButtonEvent event);
+    void _handleConfigItem(SystemState& state, ButtonEvent event);
+    void _beginConfigItem(SystemState& state);
+    void _commitConfigItem(SystemState& state);
+    void _adjustConfigDigit(int8_t dir);
     // Backs focus (and any edit) out once the buttons have been idle too long.
     void _applyIdleTimeout();
     void _goTo(ScreenId screen);
+    // Leaves the config screens without committing. Used by the LEFT hold, the
+    // idle timeout, and backing off the first digit.
+    void _leaveConfig(ScreenId to);
     const char* _getScreenTitle(ScreenId screen);
+
+    bool _onHome() const { return _currentScreen == ScreenId::HOME; }
+    // True whenever the UI owns the buttons — a timer edit, or any screen past
+    // home. InputManager stands down on this, so a SELECT hold inside a
+    // settings page can never reach through to the pump.
+    bool _uiOwnsButtons() const { return _editing() || !_onHome(); }
 
     // Boot screen drawing
     void _drawBoot(uint8_t step, uint8_t total, const char* label);
     // Home screen drawing
     void _drawHome(SystemState& state);
+    // Config screen drawing
+    void _drawConfig(SystemState& state);
+    void _drawConfigItem(SystemState& state);
+    // Label hard left, value hard right, over a highlight bar when selected.
+    // _drawStatRow below is the black-background variant of the same idea.
+    void _drawConfigRow(int16_t y, const char* label, const char* value,
+                        bool selected, uint16_t valueColor);
+    // Renders a millimetre value as "M.MMM", blinking the digit under the
+    // cursor while `editing`. Returns nothing — it draws centred on its own.
+    void _drawMetresValue(int16_t y, uint16_t mm, bool editing);
     // Title bar drawing
     void _drawTitleBar(SystemState& state);
     void _drawSignalBars(uint8_t level);

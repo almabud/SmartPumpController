@@ -64,7 +64,8 @@ enum class Field : uint8_t {
     CLOUD_CONNECTED,
     ACTIVE_SCENE,
     UPTIME,
-    PUMP_TIMER
+    PUMP_TIMER,
+    BYPASS
 };
 
 // ---- Snapshot struct (previous state per consumer) -----------------------
@@ -79,6 +80,7 @@ struct StateSnapshot {
     bool          tankTempFault   = false;
     PumpState     pumpState       = PumpState::OFF;
     OperatingMode mode            = OperatingMode::AUTO;
+    bool          bypass          = false;
     float         voltage         = -1.0f;
     float         current         = -1.0f;
     float         powerWatts      = -1.0f;
@@ -118,7 +120,10 @@ public:
     bool     tankTempFault    = false;  // DS18B20 unreadable; tankTempC is the node's fallback
 
     // Calibration — the distances the sensor reports at the two extremes.
-    // Seeded from config.h, user-editable from the config page in a later plan.
+    // Seeded from config.h, then overwritten by ConfigStore with whatever the
+    // config page last saved. Deliberately absent from StateSnapshot below:
+    // the config screens force their own repaint, and RadioReceiver reads these
+    // directly. Add them there if CloudClient ever needs to publish them.
     uint16_t tankFullMm       = TANK_DISTANCE_FULL_MM;
     uint16_t tankEmptyMm      = TANK_DISTANCE_EMPTY_MM;
 
@@ -149,6 +154,17 @@ public:
     // ---- Mode / control --------------------------------------------------
     OperatingMode mode            = OperatingMode::AUTO;
     PumpState     pumpState       = PumpState::OFF;
+
+    // ---- Settings --------------------------------------------------------
+    // Written by DisplayUI (the config page), read by SceneEngine. Bypass
+    // stands the AUTO level logic down: the pump then answers only to the
+    // buttons, the timer and the cloud. It does NOT reach PumpDriver — the
+    // safety interlocks there apply either way.
+    bool     bypass           = false;
+
+    // Set by DisplayUI when a setting is committed, cleared by ConfigStore once
+    // it has been written. Modules never call each other; this is the handoff.
+    bool     configDirty      = false;
 
     // ---- Requests --------------------------------------------------------
     // Written by InputManager (local button) or CloudClient (remote app).

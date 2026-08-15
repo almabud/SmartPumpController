@@ -22,20 +22,41 @@ void DisplayUI::begin() {
 void DisplayUI::update(SystemState& state, ButtonEvent event) {
    if (event != ButtonEvent::NONE) _lastInputMs = millis();
 
-   _handleNavigation(state, event);
-   _handleTimerEdit(state, event);
+   // The one global gesture, handled before the per-screen routing so it works
+   // from any depth. On home there is nowhere further back, so it reads as the
+   // short LEFT it would otherwise have been.
+   if (event == ButtonEvent::LEFT_LONG_PRESS) {
+       if (_onHome()) _focus = FocusTarget::NONE;
+       else           _leaveConfig(ScreenId::HOME);
+       _screenChanged = true;
+       event          = ButtonEvent::NONE;
+   }
+
+   switch (_currentScreen) {
+       case ScreenId::HOME:
+           _handleNavigation(state, event);
+           _handleTimerEdit(state, event);
+           break;
+       case ScreenId::CONFIG:      _handleConfigList(state, event); break;
+       case ScreenId::CONFIG_ITEM: _handleConfigItem(state, event); break;
+   }
+
    _applyIdleTimeout();
-   state.uiEditing = _editing();   // tells InputManager to keep off the pump
+   state.uiEditing = _uiOwnsButtons();   // tells InputManager to keep off the pump
 
-   // uptimeSeconds already forces a redraw once a second, so the blink needs a
-   // force of its own to run at the display cadence instead.
+   // uptimeSeconds already forces a redraw once a second, so the blinks need a
+   // force of their own to run at the display cadence instead.
+   const bool blinking = _editing() || _currentScreen == ScreenId::CONFIG_ITEM;
    if (_editing()) _timerBlinkOn = !_timerBlinkOn;
+   if (_currentScreen == ScreenId::CONFIG_ITEM) _cfgBlinkOn = !_cfgBlinkOn;
 
-   if (!state.hasChanged(Consumer::DISPLAY_CONSUMER) && !_screenChanged && !_editing())
+   if (!state.hasChanged(Consumer::DISPLAY_CONSUMER) && !_screenChanged && !blinking)
         return;
 
     switch (_currentScreen) {
-        case ScreenId::HOME: _drawHome(state); break;
+        case ScreenId::HOME:        _drawHome(state);       break;
+        case ScreenId::CONFIG:      _drawConfig(state);     break;
+        case ScreenId::CONFIG_ITEM: _drawConfigItem(state); break;
     }
 
     _sprite.pushSprite(0, 0);
@@ -70,8 +91,17 @@ void DisplayUI::_handleNavigation(SystemState& state, ButtonEvent event) {
 
         case ButtonEvent::LEFT_PRESS:
             // Still the escape hatch, matching how LEFT backs out of the first
-            // field once inside the editor.
+            // field once inside the editor. Home is position 0 in the screen
+            // strip, so there is nothing further left to go to.
             _focus = FocusTarget::NONE;
+            break;
+
+        case ButtonEvent::RIGHT_PRESS:
+            // Forward one level in the screen strip. The focus goes with it, so
+            // coming back never lands on a stale highlight.
+            _focus  = FocusTarget::NONE;
+            _cfgSel = 0;
+            _goTo(ScreenId::CONFIG);
             break;
 
         case ButtonEvent::SELECT_PRESS:
@@ -87,15 +117,19 @@ void DisplayUI::_handleNavigation(SystemState& state, ButtonEvent event) {
 }
 
 void DisplayUI::_applyIdleTimeout() {
-    if (_focus == FocusTarget::NONE && !_editing()) return;
+    if (_onHome() && _focus == FocusTarget::NONE && !_editing()) return;
 
-    const uint32_t limit = _editing() ? UI_EDIT_TIMEOUT_MS : UI_FOCUS_TIMEOUT_MS;
+    // Off home the long window applies to the list as well as the editor —
+    // reading a settings list is not a ten-second activity.
+    const uint32_t limit = (_editing() || !_onHome()) ? UI_EDIT_TIMEOUT_MS
+                                                     : UI_FOCUS_TIMEOUT_MS;
     if (millis() - _lastInputMs < limit) return;
 
     // Same exit as backing out by hand: the edit is dropped, and a timer that is
     // already running is left to run.
     _timerField    = TimerField::NONE;
     _focus         = FocusTarget::NONE;
+    if (!_onHome()) _leaveConfig(ScreenId::HOME);
     _screenChanged = true;
 }
 
@@ -270,14 +304,175 @@ void DisplayUI::_handleTimerEdit(SystemState& state, ButtonEvent event) {
     }
 }
 
+// ---- Config page ---------------------------------------------------------
+
+// Owns the buttons on the settings list: walks the rows and hands one over to
+// the editor on SELECT.
+void DisplayUI::_handleConfigList(SystemState& state, ButtonEvent event) {
+    if (event == ButtonEvent::NONE) return;
+
+    const uint8_t count = static_cast<uint8_t>(ConfigItem::_COUNT);
+
+    switch (event) {
+        // Unlike the home screen's walk there is no NONE position here: a list
+        // row is always selected, so the wrap is a plain modulo over the rows.
+        case ButtonEvent::DOWN_PRESS:
+            _cfgSel = (_cfgSel + 1) % count;
+            break;
+
+        case ButtonEvent::UP_PRESS:
+            _cfgSel = (_cfgSel + count - 1) % count;
+            break;
+
+        case ButtonEvent::LEFT_PRESS:
+            _leaveConfig(ScreenId::HOME);
+            break;
+
+        case ButtonEvent::RIGHT_PRESS:
+            // Forward one level in the screen strip. There is no page past this
+            // one yet, so the press is deliberately inert rather than wrapping.
+            return;
+
+        case ButtonEvent::SELECT_PRESS:
+            _beginConfigItem(state);
+            break;
+
+        default:
+            return;   // nothing moved, so nothing to redraw
+    }
+
+    _screenChanged = true;
+}
+
+// Loads the working copy so an edit is a tweak rather than a retype — the same
+// preload _beginTimerEdit does.
+void DisplayUI::_beginConfigItem(SystemState& state) {
+    switch (static_cast<ConfigItem>(_cfgSel)) {
+        case ConfigItem::TANK_FULL:  _cfgEditMm   = state.tankFullMm;  break;
+        case ConfigItem::TANK_EMPTY: _cfgEditMm   = state.tankEmptyMm; break;
+        case ConfigItem::BYPASS:     _cfgEditBool = state.bypass;      break;
+        default: return;
+    }
+
+    _cfgDigit   = 0;
+    _cfgBlinkOn = false;   // update() flips it, so the digit shows first
+    _goTo(ScreenId::CONFIG_ITEM);
+}
+
+// Steps the digit under the cursor by one, wrapping 0-9. Out-of-range values
+// are reachable mid-edit on purpose: the check belongs on commit, the same
+// split _dutyValid() uses for the timer.
+void DisplayUI::_adjustConfigDigit(int8_t dir) {
+    uint16_t place = 1;
+    for (uint8_t i = _cfgDigit + 1; i < CFG_DIGITS; i++) place *= 10;
+
+    uint8_t was = (_cfgEditMm / place) % 10;
+    uint8_t now = (was + dir + 10) % 10;
+
+    _cfgEditMm = _cfgEditMm + (uint16_t)(now * place) - (uint16_t)(was * place);
+}
+
+void DisplayUI::_commitConfigItem(SystemState& state) {
+    const ConfigItem item = static_cast<ConfigItem>(_cfgSel);
+
+    if (item == ConfigItem::BYPASS) {
+        state.bypass = _cfgEditBool;
+    } else {
+        // Both distances are validated as a pair against the other one as it
+        // currently stands, because it is the span between them that has to
+        // make sense — a value fine on its own can still invert the scale.
+        const bool full     = (item == ConfigItem::TANK_FULL);
+        const uint16_t other = full ? state.tankEmptyMm : state.tankFullMm;
+
+        bool ok = _cfgEditMm >= TANK_MIN_MM && _cfgEditMm <= TANK_MAX_MM
+               && (full ? (other > _cfgEditMm) : (_cfgEditMm > other));
+
+        if (!ok) {
+            // Hand the editor back with the cursor reset rather than storing a
+            // calibration that would make every level reading nonsense.
+            _cfgDigit = 0;
+            Serial.printf("[DisplayUI] %s rejected - %umm (valid %d-%dmm, "
+                          "empty must exceed full, other side is %umm)\n",
+                          configDef(_cfgSel).pageTitle, _cfgEditMm,
+                          TANK_MIN_MM, TANK_MAX_MM, other);
+            return;
+        }
+
+        if (full) state.tankFullMm  = _cfgEditMm;
+        else      state.tankEmptyMm = _cfgEditMm;
+    }
+
+    // ConfigStore picks this up on the same loop pass and writes it to NVS.
+    state.configDirty = true;
+    Serial.printf("[DisplayUI] %s set\n", configDef(_cfgSel).pageTitle);
+
+    _leaveConfig(ScreenId::CONFIG);
+}
+
+void DisplayUI::_handleConfigItem(SystemState& state, ButtonEvent event) {
+    if (event == ButtonEvent::NONE) return;
+
+    const bool isBool = (configDef(_cfgSel).kind == ConfigKind::BOOL);
+
+    switch (event) {
+        case ButtonEvent::UP_PRESS:
+            if (isBool) _cfgEditBool = !_cfgEditBool;
+            else        _adjustConfigDigit(+1);
+            break;
+
+        case ButtonEvent::DOWN_PRESS:
+            if (isBool) _cfgEditBool = !_cfgEditBool;
+            else        _adjustConfigDigit(-1);
+            break;
+
+        case ButtonEvent::LEFT_PRESS:
+            // Backing off the first digit leaves the editor, discarding — the
+            // same exit LEFT gives off the timer's first field.
+            if (isBool || _cfgDigit == 0) _leaveConfig(ScreenId::CONFIG);
+            else                          _cfgDigit--;
+            break;
+
+        case ButtonEvent::RIGHT_PRESS:
+            if (!isBool && _cfgDigit < CFG_DIGITS - 1) _cfgDigit++;
+            break;
+
+        case ButtonEvent::SELECT_PRESS:
+            _commitConfigItem(state);
+            break;
+
+        case ButtonEvent::SELECT_LONG_PRESS:
+            // Same as backing out with LEFT. InputManager stands down while
+            // uiEditing is set, so the pump is not touched.
+            _leaveConfig(ScreenId::CONFIG);
+            break;
+
+        default:
+            return;
+    }
+
+    _screenChanged = true;
+}
+
 void DisplayUI::_goTo(ScreenId screen) {
     _currentScreen = screen;
     _screenChanged = true;
 }
 
+// Every way out of the config screens that is not a commit. The working copies
+// are simply abandoned — nothing has been written to state yet.
+void DisplayUI::_leaveConfig(ScreenId to) {
+    _cfgDigit = 0;
+    if (to == ScreenId::HOME) _cfgSel = 0;
+    _goTo(to);
+}
+
 const char* DisplayUI::_getScreenTitle(ScreenId screen) {
     switch (screen) {
-        case ScreenId::HOME:            return nullptr;
-        default:                        return "";
+        // Home carries its own furniture and wants the space, so the title slot
+        // is left blank rather than unset — the title bar prints it either way.
+        case ScreenId::HOME:        return "";
+        case ScreenId::CONFIG:      return "CONFIG";
+        case ScreenId::CONFIG_ITEM: return configDef(_cfgSel).pageTitle;
+        default:                    return "";
     }
 }

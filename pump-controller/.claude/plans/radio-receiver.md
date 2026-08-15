@@ -84,8 +84,9 @@ Clamping means a distance past either calibration point reads as a clean 0% or
 entirely — that becomes reachable once the values are user-editable.
 
 **The values live in `SystemState`, seeded from `config.h`**, not read from the
-macros at the point of conversion. The config page (next plan) writes
-`state.tankFullMm` / `state.tankEmptyMm` and nothing in this module changes.
+macros at the point of conversion. The config page writes `state.tankFullMm` /
+`state.tankEmptyMm` and nothing in this module changed
+(see [config-page.md](config-page.md)).
 
 ## Staleness
 
@@ -117,8 +118,9 @@ is drained. `update()` drains in a `while` loop for the same reason.
 
 ## Not in scope
 
-The **config page** — calibration stays compile-time defaults for now; making it
-user-editable is the next plan.
+The **config page** — delivered separately, see [config-page.md](config-page.md).
+The `config.h` values are now only the power-on defaults; `ConfigStore` loads
+whatever the user last saved over them.
 
 The dead v1 files in the project root (`control_box.*`, `display.*`,
 `water_tank_data_receiver.h`, `water_tank_data_reveiver.cpp`) contain an older

@@ -16,6 +16,7 @@ bool SystemState::hasChanged(Consumer consumer) const {
         tankTempFault   != s.tankTempFault   ||
         pumpState       != s.pumpState       ||
         mode            != s.mode            ||
+        bypass          != s.bypass          ||
         powerFault      != s.powerFault      ||
         pumpFault       != s.pumpFault       ||
         wifiConnected   != s.wifiConnected   ||
@@ -43,6 +44,7 @@ bool SystemState::hasChanged(Consumer consumer, Field field) const {
                                         || tankTempFault   != s.tankTempFault;
         case Field::PUMP_STATE:     return pumpState      != s.pumpState;
         case Field::OPERATING_MODE: return mode           != s.mode;
+        case Field::BYPASS:         return bypass         != s.bypass;
         case Field::VOLTAGE:        return floatChanged(voltage,    s.voltage);
         case Field::CURRENT:        return floatChanged(current,    s.current);
         case Field::POWER_WATTS:    return floatChanged(powerWatts, s.powerWatts);
@@ -69,6 +71,7 @@ void SystemState::markSeen(Consumer consumer) {
     s.tankTempFault   = tankTempFault;
     s.pumpState      = pumpState;
     s.mode           = mode;
+    s.bypass         = bypass;
     s.voltage        = voltage;
     s.current        = current;
     s.powerWatts     = powerWatts;

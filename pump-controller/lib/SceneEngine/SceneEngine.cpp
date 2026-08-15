@@ -7,6 +7,13 @@ void SceneEngine::update(SystemState& state) {
         state.pumpRequest       = ActionRequest::NONE;
     }
 
+    // Bypass stands the AUTO level logic down entirely: with it on the pump
+    // answers only to the buttons, the timer and the cloud. It sits below the
+    // manual request above on purpose — bypass must never disarm the override.
+    // It also does NOT reach PumpDriver: the safety interlocks there apply
+    // either way (see rule 3 in .claude/plans/milestones.md).
+    if (state.bypass) return;
+
     // Phase 4: hysteresis + AUTO mode logic, paused while mode == MANUAL.
     // No AUTO action until PowerMeter and RadioReceiver provide real data.
 }

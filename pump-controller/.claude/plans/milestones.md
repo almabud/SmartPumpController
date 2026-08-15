@@ -35,10 +35,13 @@ any sensor data or network connectivity.
 - `InputManager` — debounce (30ms), short press events, long-press detection (1000ms)
 - `DisplayUI` — full menu/screen state machine:
   - Home screen (status at a glance)
-  - Manual control screen (pump ON/OFF override)
-  - Settings screen (thresholds, mode switch)
+  - Manual control screen (pump ON/OFF override) — not written; the home screen's
+    SELECT hold covers the override instead
+  - Settings screen — done, as the config page
+    (see [config-page.md](config-page.md))
   - About screen (firmware version, uptime)
-- Long-press BACK from any screen = return to home screen instantly
+- Long-press BACK from any screen = return to home screen instantly — done as a
+  2 s LEFT hold; there is no dedicated BACK button on this board
 - Button press gives visual feedback on display (highlight / invert)
 - Pump timer on the home screen — a pump-on run budget plus an optional
   BREAK/RUN cycle, edited with the pad and driven by `PumpTimer`
