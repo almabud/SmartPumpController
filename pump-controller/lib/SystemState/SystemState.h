@@ -187,6 +187,12 @@ public:
     // through to the pump or a running timer.
     bool         uiEditing      = false;
 
+    // Same channel, different question: LEFT's hold means "toggle bypass" on the
+    // home screen and "back to home" everywhere else, and the two get different
+    // hold times. InputManager cannot see the screen, so DisplayUI tells it.
+    // Starts true — the UI boots on home.
+    bool         uiOnHome       = true;
+
     // Written by PumpTimer, read by DisplayUI.
     TimerPhase   timerPhase     = TimerPhase::IDLE;
     uint32_t     timerRemainSec = 0;    // seconds left in the whole window

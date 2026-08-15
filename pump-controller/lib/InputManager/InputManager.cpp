@@ -77,11 +77,20 @@ void InputManager::update(SystemState& state) {
             }
         }
 
+        // LEFT is the one button whose hold means two different things: back a
+        // screen, or toggle bypass on the home screen where there is no screen
+        // to go back to. The table holds the navigation default; home swaps in
+        // the longer one. Reading uiOnHome mid-hold is safe — longFired latches
+        // on the first crossing, so a screen change under the finger cannot
+        // fire a second event.
+        uint32_t longMs = LONG_MS[i];
+        if (i == BTN_LEFT && state.uiOnHome) longMs = BUTTON_BYPASS_HOLD_MS;
+
         // Held long enough — fire once, mid-hold. Buttons with no long press
         // are skipped entirely, so their hold never suppresses the short press
         // that fires on release.
-        if (LONG_MS[i] != 0 && b.stable == LOW && !b.longFired &&
-            (now - b.pressStartMs) >= LONG_MS[i]) {
+        if (longMs != 0 && b.stable == LOW && !b.longFired &&
+            (now - b.pressStartMs) >= longMs) {
             b.longFired = true;
             _lastEvent  = LONG_EVENTS[i];
 

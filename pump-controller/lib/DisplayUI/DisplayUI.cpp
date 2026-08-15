@@ -23,11 +23,12 @@ void DisplayUI::update(SystemState& state, ButtonEvent event) {
    if (event != ButtonEvent::NONE) _lastInputMs = millis();
 
    // The one global gesture, handled before the per-screen routing so it works
-   // from any depth. On home there is nowhere further back, so it reads as the
-   // short LEFT it would otherwise have been.
+   // from any depth. On home there is nowhere further back to go, so the hold
+   // is the bypass shortcut instead — the timer editor owns LEFT while it is
+   // open, so the shortcut stands down rather than reaching past it.
    if (event == ButtonEvent::LEFT_LONG_PRESS) {
-       if (_onHome()) _focus = FocusTarget::NONE;
-       else           _leaveConfig(ScreenId::HOME);
+       if (!_onHome())       _leaveConfig(ScreenId::HOME);
+       else if (!_editing()) _toggleBypass(state);
        _screenChanged = true;
        event          = ButtonEvent::NONE;
    }
@@ -43,6 +44,7 @@ void DisplayUI::update(SystemState& state, ButtonEvent event) {
 
    _applyIdleTimeout();
    state.uiEditing = _uiOwnsButtons();   // tells InputManager to keep off the pump
+   state.uiOnHome  = _onHome();          // and which hold time LEFT should use
 
    // uptimeSeconds already forces a redraw once a second, so the blinks need a
    // force of their own to run at the display cadence instead.
@@ -302,6 +304,22 @@ void DisplayUI::_handleTimerEdit(SystemState& state, ButtonEvent event) {
         default:
             break;
     }
+}
+
+// ---- Bypass --------------------------------------------------------------
+
+// The home screen's LEFT-hold shortcut. Kept separate from _commitConfigItem(),
+// which works off _cfgSel and the editor's working copies — this has neither.
+void DisplayUI::_toggleBypass(SystemState& state) {
+    state.bypass = !state.bypass;
+
+    // ConfigStore picks this up on the same loop pass. A shortcut whose effect
+    // vanished on the next power cycle would be worse than no shortcut.
+    state.configDirty = true;
+
+    Serial.printf("[DisplayUI] bypass %s - AUTO level control %s\n",
+                  state.bypass ? "on" : "off",
+                  state.bypass ? "standing down" : "active");
 }
 
 // ---- Config page ---------------------------------------------------------

@@ -117,6 +117,10 @@ private:
             && !_touched(TimerField::RUN_HH) && !_touched(TimerField::RUN_MM);
     }
 
+    // The home screen's LEFT-hold shortcut — flips state.bypass and marks the
+    // config dirty so ConfigStore persists it.
+    void _toggleBypass(SystemState& state);
+
     void _handleNavigation(SystemState& state, ButtonEvent event);
     void _handleConfigList(SystemState& state, ButtonEvent event);
     void _handleConfigItem(SystemState& state, ButtonEvent event);

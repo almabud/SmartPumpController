@@ -194,6 +194,12 @@
 // home has to be clearly longer than a press that overshot — hence 2s, not 1s.
 #define BUTTON_BACK_HOLD_MS    2000   // hold LEFT this long to return to the home screen
 
+// The same button's hold on the home screen toggles bypass instead — there is
+// nowhere further back to go from there. Longer than the navigation gesture on
+// purpose: returning home is harmless, arming bypass changes how the pump
+// behaves and should take a hold nobody does by accident.
+#define BUTTON_BYPASS_HOLD_MS  3000   // hold LEFT this long on home to toggle bypass
+
 // A widget left focused or an edit left half-finished backs out on its own, so
 // the display never sits waiting on a user who walked away. Editing gets the
 // longer window — setting a timer has natural pauses.
