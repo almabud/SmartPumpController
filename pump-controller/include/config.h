@@ -2,8 +2,10 @@
 #pragma once
 
 // ---------- Analog sensors (ADC1 only — Wi-Fi always on) ----------
-#define PIN_VOLTAGE_SENSE   4    // ZMPT101B (3.3V supply, pot-tuned)
-#define PIN_CURRENT_SENSE   5    // ACS712-30A (via 10k/20k divider!)
+// The ACS712 is the 5V part: its output reaches ~4.5V, so it is the one behind
+// the divider. The ZMPT runs off 3V3 and stays in range on its own.
+#define PIN_CURRENT_SENSE   4    // ACS712-30A (via 2.1k/4.6k divider!)
+#define PIN_VOLTAGE_SENSE   5    // ZMPT101B (3.3V supply, pot-tuned, no divider)
 
 // ---------- Buttons (touch-capable; active-low push buttons) ----------
 #define PIN_BTN_LEFT        11
@@ -56,6 +58,32 @@
 #define ACS712_DIVIDER_RATIO   0.686f   // 4.6 / (2.1 + 4.6) — your actual resistors
 #define ACS712_MV_PER_AMP      66.0f
 
+// ---------- Power metering ----------
+// One sample pair per eligible loop pass rather than a blocking burst, so the
+// display never waits on the sampler. 2 kHz gives 40 samples per 50 Hz cycle.
+#define ADC_SAMPLE_INTERVAL_US   500
+#define POWER_WINDOW_MS         1000   // one reported reading per window
+
+// The ZMPT101B has a trim pot, so no constant is right until it is measured on
+// this board — see "Calibrating the power sensors" in docs/wiringe_guide.md.
+// Mains volts per volt seen at PIN_VOLTAGE_SENSE.
+#define ZMPT_CAL_V_PER_V       220.0f  // PLACEHOLDER — calibrate before trusting a reading
+
+// Below the noise floor the ACS712 is only reporting itself; report a clean 0
+// instead of a drifting tenth of an amp with the pump off.
+#define POWER_NOISE_FLOOR_A      0.15f
+#define POWER_V_MIN            180.0f  // sustained under this -> powerFault
+#define POWER_V_MAX            260.0f  // sustained over this  -> powerFault
+#define POWER_FAULT_CONFIRM_N       3  // consecutive bad windows before the flag latches
+
+// ---------- 24h stats ----------
+// Bucket period. Drop to 60000 to make an "hour" one minute and roll the whole
+// 24-slot ring in 24 minutes while testing.
+#define POWER_STATS_BUCKET_MS  3600000UL
+#define POWER_STATS_BUCKETS          24
+#define POWER_STATS_FLUSH_MS    600000UL  // flush the live bucket to NVS this often, if dirty
+#define POWER_STATS_NVS_VER           1   // bump to discard buckets after a struct change
+
 // ---------- Tank calibration (placeholders — measure on site) ----------
 // The distances the sensor reports at the two extremes. Read them off the
 // [RadioReceiver] log line with the tank full and then empty. These are only
@@ -70,7 +98,6 @@
 
 // ---------- Scheduler intervals ----------
 #define INTERVAL_RADIO_MS        50
-#define INTERVAL_POWER_MS      1000
 #define INTERVAL_DISPLAY_MS     500
 #define INTERVAL_WIFI_CHECK_MS 5000
 #define INTERVAL_CLOUD_MS      2000
