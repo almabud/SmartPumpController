@@ -99,6 +99,10 @@ override, and it does not reach `PumpDriver` — rule 3 in
 never bypassed. This is narrower than the v1 `control_box.cpp` flag, which also
 skipped the full-tank stop.
 
+The config page row is not the only way in: a title-bar icon and a LEFT-hold
+shortcut on the home screen were added on top of this — see
+[bypass-shortcut.md](bypass-shortcut.md).
+
 ### Persistence goes through the state, not a call
 
 `DisplayUI` sets `state.configDirty` on commit; `ConfigStore::update()` sees the
