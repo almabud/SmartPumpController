@@ -6,6 +6,7 @@
 #include "DisplayUI.h"
 #include "InputManager.h"
 #include "PowerMeter.h"
+#include "PowerStats.h"
 #include "PumpDriver.h"
 #include "PumpTimer.h"
 #include "RadioReceiver.h"
@@ -19,6 +20,7 @@ DisplayUI     displayUI;
 InputManager  inputManager;
 RadioReceiver radioReceiver;
 PowerMeter   powerMeter;
+PowerStats   powerStats;
 PumpDriver   pumpDriver;
 PumpTimer    pumpTimer;
 SceneEngine  sceneEngine;
@@ -52,6 +54,9 @@ void setup() {
     powerMeter.begin();
     displayUI.showBoot(4, BOOT_TOTAL_STEPS, "Starting power...");
 
+    powerStats.begin();
+    displayUI.showBoot(5, BOOT_TOTAL_STEPS, "Starting stats...");
+
     displayUI.showBoot(BOOT_TOTAL_STEPS, BOOT_TOTAL_STEPS, "Ready");
     delay(BOOT_HOLD_MS);   // let the completed bar register before the home screen
 
@@ -68,6 +73,7 @@ void loop() {
     pumpTimer.update(state);     // countdown -> request
     sceneEngine.update(state);   // request  -> desired action
     pumpDriver.update(state);    // desired action -> relay + pumpState
+    powerStats.update(state);    // pump state + power -> rolling 24h window
 
     // Button events drive the display directly so a press is never waiting out
     // the refresh interval; the interval only covers idle repaints.

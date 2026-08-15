@@ -130,6 +130,17 @@ public:
     float    frequency        = 0.0f;   // mains frequency (Hz)
     bool     powerFault       = false;  // true if voltage/current out of safe range
 
+    // ---- Rolling 24h stats -----------------------------------------------
+    // Written by PowerStats, read by DisplayUI and later CloudClient.
+    // Not part of StateSnapshot: the display gate already opens every second
+    // via uptimeSeconds, which is exactly how often these change. Add them
+    // there if CloudClient ever needs field-granular change detection.
+    uint32_t stats24hRuntimeSec  = 0;
+    uint16_t stats24hCycles      = 0;
+    float    stats24hEnergyKwh   = 0.0f;
+    float    stats24hAvgCurrent  = 0.0f;   // mean amps while the pump was running
+    float    stats24hPeakCurrent = 0.0f;
+
     // ---- Connectivity ----------------------------------------------------
     bool     wifiConnected    = false;  // true when Wi-Fi is connected
     bool     cloudConnected   = false;  // true when MQTT broker is connected

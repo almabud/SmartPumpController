@@ -101,6 +101,14 @@
 #define POWER_STATS_FLUSH_MS    600000UL  // flush the live bucket to NVS this often, if dirty
 #define POWER_STATS_NVS_VER           1   // bump to discard buckets after a struct change
 
+// How often runtime, energy and current are folded into the live bucket. Also
+// the resolution of the runtime figure, so there is no reason to go finer.
+#define POWER_STATS_TICK_MS        1000
+
+// Totals log cadence. Set to 0 to silence once the numbers are trusted — the
+// home screen is where these belong, this is for bringing the module up.
+#define POWER_STATS_LOG_MS        10000
+
 // ---------- Tank calibration (placeholders — measure on site) ----------
 // The distances the sensor reports at the two extremes. Read them off the
 // [RadioReceiver] log line with the tank full and then empty. These are only
@@ -143,6 +151,6 @@
 
 // ---------- Boot screen ----------
 #define FIRMWARE_VERSION     "v2.0"
-#define BOOT_TOTAL_STEPS         5   // Display, Inputs, Radio, Power, Ready — bump as modules land
+#define BOOT_TOTAL_STEPS         6   // Display, Inputs, Radio, Power, Stats, Ready — bump as modules land
 #define BOOT_STEP_MIN_MS       500   // per-step dwell so the progress bar visibly fills
 #define BOOT_HOLD_MS           500   // extra hold on the completed bar before the home screen
