@@ -57,6 +57,26 @@ void DisplayUI::_drawCloudIcon(bool connected) {
     _sprite.unloadFont();
 }
 
+void DisplayUI::_drawBypassIcon(bool on) {
+    // Left of the cloud: the gap to its right is only ~5px, and the ban glyph
+    // is 12 wide. 104..115 leaves 2px of air before the cloud at 118, and the
+    // title keeps x=4..102 — 16 characters of font 1, against a longest title
+    // of 10 ("TANK EMPTY").
+    const int16_t X = 104;
+    // A row higher than the cloud's y=1. Smooth-font glyphs land at
+    // y + (maxAscent - dY), and ban's dY is 11 against the cloud's 10, so it
+    // sits one row lower for the same y. This puts its 13px of ink in rows
+    // 1..13, inside the bar.
+    const int16_t Y = 0;
+
+    _sprite.loadFont(FontAwesomesolid9006);
+    // Red rather than the cloud's green/grey pair: bypass on means the AUTO
+    // logic is standing down, which is a warning, not a status.
+    _sprite.setTextColor(on ? TFT_RED : TFT_DARKGREY, TFT_BLACK);
+    _sprite.drawString("\uf05e", X, Y);   // ban — AUTO suppressed
+    _sprite.unloadFont();
+}
+
 void DisplayUI::_drawTitleBar(SystemState& state) {
     _sprite.fillRect(0, 0, 160, 14, TFT_BLACK);
     _sprite.drawFastHLine(0, 13, 160, 0x2945);
@@ -67,6 +87,9 @@ void DisplayUI::_drawTitleBar(SystemState& state) {
     _drawSignalBars(_rssiToBars(state.wifiRssi, state.wifiConnected));
     _drawHeartbeat(state);
     _drawCloudIcon(state.cloudConnected);
+    // The title bar is shared, so this shows on every screen — correct, since
+    // bypass is global state rather than something the home screen owns.
+    _drawBypassIcon(state.bypass);
 }
 // ------------------------------------
 

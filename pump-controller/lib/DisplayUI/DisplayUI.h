@@ -161,6 +161,8 @@ private:
     uint8_t _rssiToBars(int8_t rssi, bool connected);
     void _drawHeartbeat(SystemState& state);
     void _drawCloudIcon(bool connected);
+    // Dim when off, red when on — always drawn, so the bar never reflows.
+    void _drawBypassIcon(bool on);
     // Tank level drawing
     void _drawTankLevel(SystemState& state);
     // Tank temperature drawing
