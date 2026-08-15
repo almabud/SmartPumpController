@@ -92,15 +92,18 @@ The gap to the right of the cloud is only ~5 px, so the icon goes to its left:
 
 ```
 ┌──────────────────────────────────────┐
-│ CONFIG            ⊘  ☁  ●  ▁▃▅▇     │  y0-13
+│ CONFIG            ⊘   ☁  ●  ▁▃▅▇    │  y0-13
 └──────────────────────────────────────┘
-  x=4              104 118 136 147
-  title            ban cloud hb  bars
+  x=4              100  118 136 147
+  title            ban  cloud hb  bars
 ```
 
-Ban is 12 wide → 104..115, leaving 2 px to the cloud at 118. Title text keeps
-x=4..102 — about 16 characters of font 1, and the longest title in the app
-(`TANK EMPTY`) is 10.
+Ban is 12 wide → 100..111, leaving 6 px to the cloud at 118. That is wider than
+the ~4 px between the other three icons on purpose: ban's ink fills its box edge
+to edge while the cloud's does not, so equal numbers read as unequal gaps.
+
+Title text keeps x=4..98 — about 15 characters of font 1, and the longest title
+in the app (`TANK EMPTY`) is 10.
 
 `_drawTitleBar()` is shared, so the icon appears on every screen rather than only
 home. That is correct: bypass is global state.

@@ -59,10 +59,12 @@ void DisplayUI::_drawCloudIcon(bool connected) {
 
 void DisplayUI::_drawBypassIcon(bool on) {
     // Left of the cloud: the gap to its right is only ~5px, and the ban glyph
-    // is 12 wide. 104..115 leaves 2px of air before the cloud at 118, and the
-    // title keeps x=4..102 — 16 characters of font 1, against a longest title
-    // of 10 ("TANK EMPTY").
-    const int16_t X = 104;
+    // is 12 wide. 100..111 leaves 6px of air before the cloud at 118 — wider
+    // than the ~4px between the other icons, because ban's ink fills its box
+    // edge to edge while the cloud's does not, so equal numbers read as
+    // unequal gaps. The title keeps x=4..98, 15 characters of font 1, against
+    // a longest title of 10 ("TANK EMPTY").
+    const int16_t X = 100;
     // A row higher than the cloud's y=1. Smooth-font glyphs land at
     // y + (maxAscent - dY), and ban's dY is 11 against the cloud's 10, so it
     // sits one row lower for the same y. This puts its 13px of ink in rows
