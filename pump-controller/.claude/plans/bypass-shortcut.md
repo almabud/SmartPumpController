@@ -18,7 +18,8 @@ level logic down in `SceneEngine::update()`. Two gaps remain:
    already wrong.
 
 This adds a title-bar status icon and a hold-to-toggle shortcut on the home
-screen.
+screen. The resulting key map across all screens is documented in
+[ui_guide.md](../../docs/ui_guide.md).
 
 **This builds on code that has never run on hardware.** The config page compiles
 but was committed with no board attached, so every check in that plan is still

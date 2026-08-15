@@ -75,6 +75,9 @@ Wire one leg to GPIO, other leg to GND. No polarity.
 
 **Logic:** pressed = LOW, released = HIGH (active-low).
 
+What each button actually *does* on each screen — including the two LEFT hold
+times and the SELECT hold — is in [ui_guide.md](ui_guide.md).
+
 **config.h pins:**
 ```cpp
 #define PIN_BTN_LEFT    11
