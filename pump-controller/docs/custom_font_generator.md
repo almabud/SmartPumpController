@@ -132,29 +132,61 @@ String fontType = ".ttf";
 
 ## 5. Select the Unicode Icons
 
-For Font Awesome icons, you need to include the correct Unicode values.
+**Read this before you regenerate anything: the font already in the project
+almost certainly has the icon you want.** `include/FontAwesomesolid9006.h`
+carries **348 unique glyphs covering the whole U+F013–U+F1EB range** — gear,
+wifi, cloud, droplet, bolt, ban, lock, plug, link, and everything else Font
+Awesome 7 Solid defines in that span. Regeneration is only needed for a
+codepoint *outside* U+F013–U+F1EB (the F2xx/F3xx/F5xx+ ranges).
 
-Example icons:
+> **`unicodeBlocks` is a list of (start, end) PAIRS, not a list of icons.**
+> This is the single most misleading thing about the Processing sketch. Two
+> entries mean one range; four entries mean two ranges. It is why this project's
+> font is 80 KB and 348 glyphs rather than the handful its list looks like it
+> asks for.
 
-| Icon         | Unicode |
-| ------------ | ------- |
-| Gear         | `f013`  |
-| WiFi         | `f1eb`  |
-| Home / House | `f015`  |
-| Cloud        | `f0c2`  |
-
-In Processing, write them like this:
+So this list:
 
 ```java
 static final int[] unicodeBlocks = {
-  0xF013, // gear
-  0xF1EB, // wifi
-  0xF015, // home / house
-  0xF0C2  // cloud
+  0xF013, 0xF1EB,   // range 1: gear .. wifi — everything in between comes too
+  0xF015, 0xF0C2    // range 2: house .. cloud — a subset of range 1
 };
 ```
 
+means *"every glyph from U+F013 to U+F1EB, plus every glyph from U+F015 to
+U+F0C2 again"* — which is exactly what the shipped font contains, duplicates and
+all (492 table entries for 348 unique codepoints).
+
+To pick out **individual** icons, give each one as its own single-codepoint
+range:
+
+```java
+static final int[] unicodeBlocks = {
+  0xF013, 0xF013,   // gear
+  0xF1EB, 0xF1EB,   // wifi
+  0xF015, 0xF015,   // home / house
+  0xF0C2, 0xF0C2    // cloud
+};
+```
+
+Common Font Awesome Solid codepoints:
+
+| Icon         | Unicode | Icon              | Unicode |
+| ------------ | ------- | ----------------- | ------- |
+| Gear         | `f013`  | Ban / no-entry    | `f05e`  |
+| WiFi         | `f1eb`  | Bolt              | `f0e7`  |
+| Home / House | `f015`  | Droplet / tint    | `f043`  |
+| Cloud        | `f0c2`  | Lock              | `f023`  |
+
+Absent from Font Awesome 7 Solid's U+F013–U+F1EB range, so no amount of
+regeneration will find them there: thermometer, faucet, power-off, plain check.
+
 If your sketch already has a Unicode list, replace the existing list instead of creating a duplicate.
+
+**Trimming is the bigger win.** 80 KB of PROGMEM for 348 glyphs when six are
+actually drawn. If flash ever gets tight, narrow the ranges rather than adding
+to them.
 
 ---
 

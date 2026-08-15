@@ -1,7 +1,9 @@
 # Bypass status icon and the LEFT-hold shortcut
 
-> Status: **planned**. No code written yet — this doc is the record the
-> implementation is checked against.
+> Status: **implemented** (`fdde20c..`). Builds clean. **No hardware
+> verification** — no board was connected, so everything under Verification
+> below is outstanding, as is the whole of [config-page.md](config-page.md)
+> that this sits on.
 
 ## Context
 
